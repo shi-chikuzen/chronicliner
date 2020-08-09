@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2020 @shi_chikuzen -->
+<html lang="ja" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.3.6/dist/css/uikit.min.css"/>
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.3.6/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.3.6/dist/js/uikit-icons.min.js"></script>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Unica+One&display=swap" rel="stylesheet">
+
+    <!-- Jquery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+    <script src="https://code.jquery.com/color/jquery.color-2.2.0.min.js" integrity="sha256-aSe2ZC5QeunlL/w/7PsVKmV+fa0eDbmybn/ptsKHR6I=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.8/jquery.csv.min.js"></script>
+
+    <!-- Sourse -->
+    <link rel="stylesheet" href="./css/main.css">
+
+    <title>Chronicliner</title>
+  </head>
+  <body>
+    <!-- Nav -->
+    <div uk-sticky="show-on-up: true; animation: uk-animation-slide-top; sel-target: .uk-navbar-container; cls-active: uk-navbar-sticky; bottom: #scrollup-dropbar" class="uk-sticky uk-sticky-below uk-sticky-fixed">
+      <nav class="uk-container uk-container-expand uk-navbar uk-navbar-sticky">
+        <!-- navContents -->
+        <!-- Logo -->
+        <div class="uk-navbar-left">
+          <a href="#" class="uk-navbar-item uk-logo font">Chronicliner</a>
+        </div>
+        <!-- Input -->
+        <div class="uk-navbar-right uk-margin-small-top uk-margin-small-bottom">
+          <div uk-form-custom="target: true">
+            <div class="uk-form-icon" uk-icon="icon: folder"></div>
+            <input type="file" name="" value="" id="csv">
+            <input class="uk-input uk-form-width-medium" type="text" placeholder="Select file..." disabled>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Contents -->
+    <div class="uk-container uk-container-expand uk-margin-top">
+      <!-- Display Setting -->
+      <div class="uk-card uk-card-default uk-card-body ukuk-width-1-1 uk-margin-bottom">
+        <ul uk-accordion>
+          <li>
+            <a href="#" class="uk-accordion-title size">表示設定</a>
+            <div class="uk-accordion-content">
+              <!-- Display Controller Main -->
+              <div class="" uk-grid>
+                <!-- sideNav -->
+                <div class="uk-width-auto@m">
+                  <ul class='uk-tab-right uk-flex-center' uk-tab="connect: #discon_form;" id="discon">
+                    <!-- サイドナビコントローラー -->
+                  </ul>
+                </div>
+                <!-- Contents -->
+                <div class="uk-container uk-container-expand">
+                  <ul id="discon_form" class="uk-switcher">
+                    <!-- チェックボックスのあるページ -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Timeline -->
+      <div class="uk-card uk-card-default uk-card-body uk-width-1-1 uk-margin-bottom uk-overflow-auto">
+        <p class="size" style="color: #333;">年表</p>
+        <div class="uk-width-1-1">
+          <table id="timeline" class="uk-table uk-table-divider uk-table-small">
+            <thead>
+              <tr id="LCategory">
+                <!-- LCategory -->
+              </tr>
+              <tr id="SCategory">
+                <!-- SCategory -->
+              </tr>
+            </thead>
+            <tbody id="timeline_tbody">
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script src="./js/main.js" charset="utf-8"></script>
+  </body>
+</html>

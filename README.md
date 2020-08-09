@@ -1,6 +1,8 @@
 # Chronicliner
 キャラの年齢やら学年やら時系列がわからなくなった限界同人オタク用年表ツール
-**ここに画像を貼る**
+
+![動作デモ](https://raw.githubusercontent.com/shi-chikuzen/md_img/master/chronicliner/chronicliner_demo.png)
+
 ## Features
 PC上に保存したデータを読み込み、イベントやキャラクターの年齢、学年等を表示するツールです。キャラクターごとの他、寮や所属、学校等のカテゴリごとのデータ管理にも対応しています。
 - **できること**
@@ -90,13 +92,15 @@ Chroniclinerに含まれるのは以下のファイル及びフォルダです
   - ./temp/ - **テンプレート用フォルダ**
     - temp.csv - csv形式のテンプレートファイル
     - temp.xlsx - Excel形式のテンプレートファイル
+  - sample.csv - **年表データのサンプル**
 - ./main.html - **本体**
 - ./readme.md - 今読んでいるこれ
-- ./sample.csv - 年表データのサンプル
+- ./readme.pdf - これをpdf化したもの。但し一部の表がはみ出ている
+
 
 ### Data Create
 ./data/temp/temp.xlsxを複製し、dataフォルダ内等に保存します。このファイルに書き込むことでデータを作成します。
-なお、サンプルデータとして./sample.csvを同梱しています。書式等適宜参考にして作業を行ってください。
+なお、サンプルデータとして./data/sample.csvを同梱しています。書式等適宜参考にして作業を行ってください。
 <br>
 
 -----
@@ -317,7 +321,7 @@ MITライセンスです。
 - 同人・商用等での利用及び改変、改変物の配布が可能です
 - 但し、このソースを使用したことによる責任の一切を負いかねます
 
-Copyright (c) 2020 @shi_chikuzen
+Copyright (c) 2020 [@shi_chikuzen](https://twitter.com/shi_chikuzen)
 Released under the MIT license
 https://opensource.org/licenses/mit-license.php
 
@@ -358,4 +362,4 @@ https://opensource.org/licenses/mit-license.php
   - 或いは既存の年表作成ツールを使えばある程度の用は足せますが、調べた範囲のWebサービスではGoogleスプレッドシートを全体公開しなければいけないのがネックでした。この用途ではあまりデータを外に公開したくないですからね。**そういうわけです**
 
 ## Contact
-バグ報告、機能リクエスト等は[@shi_chikuzen]()のマシュマロ、DM等にお願いします。
+バグ報告、機能リクエスト等は[@shi_chikuzen](https://twitter.com/shi_chikuzen)のマシュマロ、DM等にお願いします。
