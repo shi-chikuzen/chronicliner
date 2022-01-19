@@ -1,0 +1,25 @@
+/* Copyright (c) 2020 @shi_chikuzen */
+* {
+  font-family: "Noto Sans JP", "Healvetica", "Hiragino Sans",
+    "ヒラギノ角ゴシック", YuGothic, "Yu Gothic", "メイリオ", Meiryo,
+    "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
+}
+
+#main {
+  background-color: rgb(248, 250, 251);
+}
+
+.font {
+  font-family: "Unica One", cursive;
+}
+
+.logo {
+  font-size: 1.5rem;
+}
+
+.border_bottom_grey {
+}
+
+.size {
+  font-size: 0.875em;
+}

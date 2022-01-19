@@ -8,16 +8,102 @@
         <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+        <!-- SheetJS CDN Settings -->
+        <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
         <!-- Font -->
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Unica+One&display=swap" rel="stylesheet">
+        <!-- Sourse -->
+        <link rel="stylesheet" href="./css/app.css">
 
         <title>Chronicliner2</title>
     </head>
     <body>
         <div id="app">
-            <v-app></v-app>
+            <v-app>
+                <!-- Application Bar -->
+                <v-app-bar
+                app
+                absolute
+                class="px-10"
+                style="border-bottom: 1px solid #eaf1f5 !important;"
+                color="white"
+                elevate-on-scroll
+                scroll-traget="#main">
+                    <v-toolbar-title class="font logo">Chronicliner</v-toolbar-title>
+                    <v-spacer></v-spacer>
+                    <!-- File Form -->
+                    <v-form>
+                        <v-file-input
+                        v-model="fileSelected"
+                        @change="readFile"
+                        accept=".xlsx"
+                        label="Select File..."
+                        hide-input
+                        prepend-icon="mdi-folder-table-outline"
+                        ></v-file-input>
+                    </v-form>
+                    <!-- ファイル追加時chipをアニメーションで表示 -->
+                    <v-expand-x-transition>
+                        <v-chip
+                        v-show="this.state.ready"
+                        v-if="this.fileSelected != null"
+                        :color="this.state.fileError? 'error' : 'success'"
+                        outlined>
+                            {{this.fileSelected.name}}
+                        </v-chip>
+                    </v-expand-x-transition>
+                </v-app-bar>
+                <!-- Contents -->
+                <v-main id="main">
+                    <v-container fluid>
+                        <v-row class="px-3">
+                            <!-- Select Field -->
+                            <v-col cols="12">
+                                <v-expansion-panels accordion>
+                                    <v-expansion-panel
+                                    elevation="1">
+                                        <v-expansion-panel-header class="size">
+                                            表示設定
+                                        </v-expansion-panel-header>
+                                        <v-expansion-panel-content>
+                                            <v-tabs
+                                            vertical
+                                            v-show="this.state.ready">
+                                                <v-tab
+                                                v-for="(value, name) in this.data.settings.category">
+                                                    {{name}}
+                                                </v-tab>
+                                                <v-tab-item
+                                                v-for="(value, name) in this.data.settings.category">
+                                                    <v-card flat>
+                                                        <v-card-text>
+                                                            {{value}}
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-tab-item>
+                                            </v-tabs>
+                                        </v-expansion-panel-content>
+                                    </v-expansion-panel>
+                                </v-expansion-panels>
+                            </v-col>
+                            <!-- Contents Field -->
+                            <v-col cols="12">
+                                <v-card
+                                elevation="1"
+                                :loading="this.state.loading">
+                                    <v-card-title class="px-6 size">
+                                        年表
+                                    </v-card-title>
+                                    <v-divider></v-divider>
+                                </v-card>
+                            </v-col>
+                        </v-row>
+                    </v-container>
+                </v-main>
+            </v-app>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
         <script type="text/javascript" src="./js/app.js"></script>
     </body>
 </html>
