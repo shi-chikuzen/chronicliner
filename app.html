@@ -62,7 +62,7 @@
                                 <v-expansion-panels accordion>
                                     <v-expansion-panel
                                     elevation="1">
-                                        <v-expansion-panel-header class="size">
+                                        <v-expansion-panel-header class="size line-height">
                                             表示設定
                                         </v-expansion-panel-header>
                                         <v-expansion-panel-content>
@@ -100,6 +100,20 @@
                         </v-row>
                     </v-container>
                 </v-main>
+                <v-snackbar
+                v-model="this.state.errorSnack"
+                timeout=5000>
+                    <span v-for="m in this.state.message">{{m}}<br></span>
+                    <template v-slot:action="{attrs}">
+                        <v-btn
+                        color="primary"
+                        text
+                        v-bind="attrs"
+                        v-on:click="state.errorSnack = false;">
+                            Close
+                        </v-btn>
+                    </template>
+                </v-snackbar>
             </v-app>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
