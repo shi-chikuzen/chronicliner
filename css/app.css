@@ -17,8 +17,9 @@
   font-size: 1.5rem;
 }
 
-.size {
-  font-size: 0.875em;
+.size,
+.v-label {
+  font-size: 0.875em !important;
 }
 
 .line-height {

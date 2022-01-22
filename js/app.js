@@ -38,6 +38,7 @@ var app = new Vue({
             },
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": [] },
+        characterSelected: [],
     },
     computed: {
         snackMessage: function () {
@@ -279,10 +280,33 @@ var app = new Vue({
             };
         },
         async init() { // 初期化処理
+            const vm = this;
             this.state.ready = false;
             await this.formatData();
+            Object.keys(this.data.settings.category).forEach(key => {
+                vm.selectAllCharactersInCategory(key);
+            });
             this.state.loading = false;
             this.state.ready = true;
+        },
+        selectAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスにチェックを入れる
+            const vm = this;
+            const characters = this.data.settings.category[category].characters;
+            characters.forEach(function (character) {
+                if (vm.characterSelected.indexOf(character) == -1) {
+                    vm.characterSelected.push(character);
+                };
+            });
+        },
+        removeAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスのチェックを外す
+            const vm = this;
+            const characters = this.data.settings.category[category].characters;
+            characters.forEach(function (character) {
+                const index = vm.characterSelected.indexOf(character);
+                if (index != -1) {
+                    vm.characterSelected.splice(index, 1);
+                };
+            });
         }
     },
 });

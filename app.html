@@ -77,7 +77,26 @@
                                                 v-for="(value, name) in this.data.settings.category">
                                                     <v-card flat>
                                                         <v-card-text>
-                                                            {{value}}
+                                                            <v-row class="py-0">
+                                                                <v-col class="py-0">
+                                                                    <v-btn text @click="selectAllCharactersInCategory(name)">
+                                                                        すべて選択
+                                                                    </v-btn>
+                                                                    <v-btn text @click="removeAllCharactersInCategory(name)">
+                                                                        すべて選択解除
+                                                                    </v-btn>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <v-row>
+                                                                <v-col
+                                                                v-for="character in value.characters">
+                                                                    <v-checkbox
+                                                                    v-model="characterSelected"
+                                                                    :label="character"
+                                                                    :value="character"
+                                                                    ></v-checkbox>
+                                                                </v-col>
+                                                            </v-row>
                                                         </v-card-text>
                                                     </v-card>
                                                 </v-tab-item>
