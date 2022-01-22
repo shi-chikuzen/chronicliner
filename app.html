@@ -103,7 +103,7 @@
                 <v-snackbar
                 v-model="this.state.errorSnack"
                 timeout=5000>
-                    <span v-for="m in this.state.message">{{m}}<br></span>
+                    <span v-html="this.snackMessage"></span>
                     <template v-slot:action="{attrs}">
                         <v-btn
                         color="primary"
