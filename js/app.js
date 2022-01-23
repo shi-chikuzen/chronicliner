@@ -34,10 +34,10 @@ var app = new Vue({
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
                 "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "schoolName": "教育課程名", "schoolOffset": "開始年齢調整", "autoBirth": "誕生年自動計算", "autoYear": "起算年", "autoSchool": "起算課程", "autoGrade": "起算学年" },
                 "school": { "name": "名称", "period": "年数", "month": "開始月", "age": "開始年齢" },
-                "event": { "category": "カテゴリ", "title": "タイトル", "year": "年", "month": "月", "day": "日", "hour": "月", "minute": "分", "detail": "詳細" },
+                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以降を無視", "detail": "詳細" },
             },
         },
-        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": [] },
+        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {} },
         characterSelected: [],
     },
     computed: {
@@ -45,9 +45,12 @@ var app = new Vue({
             return this.state.message.join("<br>");
         },
     },
-    mounted: function () { },
+    mounted: function () {
+        this.default.data = JSON.parse(JSON.stringify(this.data));
+    },
     watch: {
-        workbook: 'init'
+        workbook: 'init',
+        characterSelected: 'update',
     },
     methods: {
         getObjectKey(obj, val) { // dictをvalで逆引きする
@@ -260,13 +263,49 @@ var app = new Vue({
         },
         createEvent() { // イベント設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.default.sheetNames["event"]], { header: 0 });
+            const settings = {"month": 3, "day": 2, "hour": 1, "minute": 0}
             const colNames = this.default.colNames["event"];
             for (let i = 0; i < data.length; i++) { // 各データを処理
-                console.info(this.convertSerial2Date(data[i][colNames["year"]]));
-            }
+                const category = String(data[i][colNames["category"]]);
+                const date = this.convertSerial2Date(data[i][colNames["date"]]);
+                const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
+                const title = String(data[i][colNames["title"]]);
+                const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
+                if (limit in settings) { // 以降を無視が設定されている場合、それ以降のデータを初期化
+                    if (settings[limit] >= 3) date.setMonth(0);
+                    if (settings[limit] >= 2) date.setDate(1);
+                    if (settings[limit] >= 1) date.setHours(0);
+                    if (settings[limit] >= 0) date.setMinutes(0);
+                };
+                // イベントの対象キャラクタを指定
+                let characters = [];
+                if (category == "all") {
+                    characters = Object.keys(this.data.settings.character);
+                } else if (category in this.data.settings.category) {
+                    characters = this.data.settings.category[category].characters;
+                } else if (category in this.data.settings.character) {
+                    characters = [category];
+                } else {
+                    this.state.message.push(`イベント「${title}」に指定されたカテゴリないしキャラクター「${category}」が存在しません`);
+                    continue;
+                };
+                // イベントを設定
+                console.info(date)
+                const key = date.toISOString();
+                if (Object.keys(this.data.event).indexOf(key) == -1) {
+                    this.data.event[key] = [];
+                };
+                const row = {
+                    "title": title,
+                    "characters": characters,
+                    "detail": detail,
+                    "date": date,
+                    "limit": limit,
+                };
+                this.data.event[key].push(row);
+            };
         },
         async formatData() { // 読み込んだxlsxをフォーマット
-            this.state.message = [];
             if (this.validData()) {
                 await this.createCategory();
                 await this.createSchool();
@@ -282,6 +321,8 @@ var app = new Vue({
         async init() { // 初期化処理
             const vm = this;
             this.state.ready = false;
+            this.state.message = [];
+            this.data = JSON.parse(JSON.stringify(this.default.data));
             await this.formatData();
             Object.keys(this.data.settings.category).forEach(key => {
                 vm.selectAllCharactersInCategory(key);
@@ -307,6 +348,12 @@ var app = new Vue({
                     vm.characterSelected.splice(index, 1);
                 };
             });
-        }
+        },
+        isCharacterSelected(character) { // 該当キャラクターが選択されているかを返す
+            return this.characterSelected.indexOf(character) != -1;
+        },
+        update() { // 描画状態をアップデート
+
+        },
     },
 });
