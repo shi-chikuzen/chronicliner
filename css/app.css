@@ -25,3 +25,30 @@
 .line-height {
   line-height: 2rem;
 }
+
+.v-timeline-item__opposite {
+  align-self: flex-start !important;
+}
+
+:root {
+  --timeline-opposite-item-width: 50px;
+  --timeline-line-width: 3px;
+}
+
+.v-timeline--dense .v-timeline-item__opposite {
+  display: inline-block;
+}
+
+.v-timeline-item__opposite {
+  flex: none;
+  min-width: var(--timeline-opposite-item-width);
+}
+
+/* line: divider in the middle is 96px wide by default */
+.v-application--is-ltr .v-timeline--dense:not(.v-timeline--reverse):before {
+  left: calc(
+    var(--timeline-opposite-item-width) + (96px - var(--timeline-line-width)) /
+      2
+  );
+  width: var(--timeline-line-width);
+}

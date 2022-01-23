@@ -109,11 +109,60 @@
                             <v-col cols="12">
                                 <v-card
                                 elevation="1"
-                                :loading="this.state.loading">
+                                :loading="this.state.loading"
+                                :class="(this.state.ready) ? 'pb-4' : ''">
                                     <v-card-title class="px-6 size">
                                         年表
                                     </v-card-title>
-                                    <v-divider></v-divider>
+                                    <v-card-text class="px-6">
+                                        <v-expand-transition>
+                                            <v-timeline
+                                            align-top
+                                            dense
+                                            v-show="this.state.ready">
+                                                <!-- Timeline -->
+                                                <v-timeline-item
+                                                v-for="key in eventKeys"
+                                                :set="event = data.event[key]"
+                                                v-show="intersection(data.event[key].characters, characterSelected).length > 0"
+                                                small
+                                                right
+                                                fill-dot>
+                                                    <span
+                                                    slot="opposite"
+                                                    class="font-weight-bold font"
+                                                    v-text="data.event[key].date.getFullYear()"
+                                                    v-show="isFirstEvent(key)"
+                                                    style="font-size:1rem !important;"
+                                                    ></span>
+                                                    <v-card
+                                                    color="primary"
+                                                    dark>
+                                                        <v-card-title>
+                                                            <span
+                                                            v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.month"
+                                                            class="font">
+                                                                {{data.event[key].date.getFullYear()}}
+                                                            </span>
+                                                            <span
+                                                            v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.day"
+                                                            class="font">
+                                                            -{{data.event[key].date.getMonth()+1}}
+                                                            </span>
+                                                            <span
+                                                            v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.hour"
+                                                            class="font">
+                                                                -{{data.event[key].date.getDate()}}
+                                                            </span>
+                                                        </v-card-title>
+                                                        <v-card-text class="white text--primary">
+                                                            hoge
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-timeline-item>
+                                            </v-timeline>
+                                        </v-expand-transition>
+                                    </v-card-text>
                                 </v-card>
                             </v-col>
                         </v-row>
