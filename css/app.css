@@ -5,12 +5,20 @@
     "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
 }
 
+html {
+  overflow-y: auto;
+}
+
 #main {
   background-color: rgb(248, 250, 251);
 }
 
 .font {
-  font-family: "Unica One", cursive;
+  font-family: "Unica One", cursive !important;
+}
+
+.f-black {
+  color: black !important;
 }
 
 .logo {

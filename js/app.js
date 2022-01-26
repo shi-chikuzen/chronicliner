@@ -36,7 +36,7 @@ var app = new Vue({
                 "school": { "name": "名称", "period": "年数", "month": "開始月", "age": "開始年齢" },
                 "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以降を無視", "detail": "詳細" },
             },
-            "displayLimit": {"month": 0, "day": 1, "hour": 2, "minute": 3},
+            "displayLimit": {"month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4},
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {} },
         characterSelected: [],
@@ -89,6 +89,9 @@ var app = new Vue({
                 result.setMilliseconds(0);
             };
             return result;
+        },
+        fillTimeByZero(val) { // 時刻をゼロ埋めする
+            return ("0" + String(val)).slice(-2);
         },
         readFile: function (file) { // xlsx読み込み
             this.state.loading = true;

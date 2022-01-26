@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- Copyright (c) 2022 @shi_chikuzen-->
-<html lang="ja" dir="ltr">
+<html lang="ja" dir="ltr" id="html">
     <head>
         <meta charset="utf-8">
         <!-- Vuetify CDN Settings -->
@@ -27,8 +27,7 @@
                 class="px-10"
                 style="border-bottom: 1px solid #eaf1f5 !important;"
                 color="white"
-                elevate-on-scroll
-                scroll-traget="#main">
+                elevation="0">
                     <v-toolbar-title class="font logo">Chronicliner</v-toolbar-title>
                     <v-spacer></v-spacer>
                     <!-- File Form -->
@@ -128,35 +127,76 @@
                                                 small
                                                 right
                                                 fill-dot>
-                                                    <span
-                                                    slot="opposite"
-                                                    class="font-weight-bold font"
-                                                    v-text="data.event[key].date.getFullYear()"
-                                                    v-show="isFirstEvent(key)"
-                                                    style="font-size:1rem !important;"
-                                                    ></span>
-                                                    <v-card
-                                                    color="primary"
-                                                    dark>
-                                                        <v-card-title>
-                                                            <span
-                                                            v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.month"
-                                                            class="font">
-                                                                {{data.event[key].date.getFullYear()}}
-                                                            </span>
-                                                            <span
-                                                            v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.day"
-                                                            class="font">
-                                                            -{{data.event[key].date.getMonth()+1}}
-                                                            </span>
-                                                            <span
-                                                            v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.hour"
-                                                            class="font">
-                                                                -{{data.event[key].date.getDate()}}
-                                                            </span>
-                                                        </v-card-title>
+                                                    <span slot="opposite">
+                                                        <span
+                                                        class="font-weight-bold font"
+                                                        style="font-size:1.1rem !important;"
+                                                        v-show="isFirstEvent(key)">
+                                                            {{event.date.getFullYear()}}<br>
+                                                        </span>
+                                                        <span
+                                                        v-if="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.day"
+                                                        style="font-size:1.0rem !important;"
+                                                        class="font f-black">
+                                                            {{event.date.getMonth()+1}}
+                                                        </span>
+                                                        <span
+                                                        v-if="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.hour"
+                                                        style="font-size:1.0rem !important;"
+                                                        class="font f-black">
+                                                            /&nbsp;{{event.date.getDate()}}
+                                                        </span>
+                                                        <span
+                                                        v-if="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.minute"
+                                                        style="font-size:1.0rem !important;"
+                                                        class="font f-black">
+                                                            <br>{{fillTimeByZero(event.date.getHours())}}
+                                                        </span>
+                                                        <span
+                                                        v-show="defaults.displayLimit[data.event[key].limit] >= defaults.displayLimit.minute"
+                                                        style="font-size:1.0rem !important;"
+                                                        class="font f-black">
+                                                            :&nbsp;{{fillTimeByZero(event.date.getMinutes())}}
+                                                        </span>
+                                                    </span>
+                                                    <v-card outlined>
                                                         <v-card-text class="white text--primary">
-                                                            hoge
+                                                            <!-- ALL -->
+                                                            <v-row v-if="event.events.all.length > 0">
+                                                                <v-col class="pb-0">
+                                                                    <v-tooltip
+                                                                    bottom
+                                                                    v-for="(e, i) in event.events.all"
+                                                                    >
+                                                                        <template v-slot:activator="{ on, attrs }">
+                                                                            <v-chip 
+                                                                            label
+                                                                            v-bind:class="[(i+1 != event.events.all.length) ? 'mr-2' : '']"
+                                                                            v-bind="attrs"
+                                                                            v-on="on"
+                                                                            color="grey darken-3"
+                                                                            text-color="white"
+                                                                            >
+                                                                                <v-icon left>
+                                                                                    mdi-alpha-a-box
+                                                                                </v-icon>
+                                                                                {{e.title}}
+                                                                            </v-chip>
+                                                                        </template>
+                                                                        <span v-if="e.detail != ''">
+                                                                            {{e.detail}}
+                                                                        </span>
+                                                                    </v-tooltip>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <!-- Character -->
+                                                            <v-row>
+                                                                <v-col
+                                                                class="overflow-x-auto d-flex align-stretch"
+                                                                v-for="c in data.settings.category">
+                                                                    {{c}}
+                                                                </v-col>
+                                                            </v-row>
                                                         </v-card-text>
                                                     </v-card>
                                                 </v-timeline-item>
