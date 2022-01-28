@@ -41,6 +41,90 @@ var app = new Vue({
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {} },
         characterSelected: [],
         eventKeys: [],
+        timelineHeaders: [],
+        timelineData: [],
+        desserts: [
+            {
+              name: 'Frozen Yogurt',
+              calories: 159,
+              fat: 6.0,
+              carbs: 24,
+              protein: 4.0,
+              iron: '1%',
+            },
+            {
+              name: 'Ice cream sandwich',
+              calories: 237,
+              fat: 9.0,
+              carbs: 37,
+              protein: 4.3,
+              iron: '1%',
+            },
+            {
+              name: 'Eclair',
+              calories: 262,
+              fat: 16.0,
+              carbs: 23,
+              protein: 6.0,
+              iron: '7%',
+            },
+            {
+              name: 'Cupcake',
+              calories: 305,
+              fat: 3.7,
+              carbs: 67,
+              protein: 4.3,
+              iron: '8%',
+            },
+            {
+              name: 'Gingerbread',
+              calories: 356,
+              fat: 16.0,
+              carbs: 49,
+              protein: 3.9,
+              iron: '16%',
+            },
+            {
+              name: 'Jelly bean',
+              calories: 375,
+              fat: 0.0,
+              carbs: 94,
+              protein: 0.0,
+              iron: '0%',
+            },
+            {
+              name: 'Lollipop',
+              calories: 392,
+              fat: 0.2,
+              carbs: 98,
+              protein: 0,
+              iron: '2%',
+            },
+            {
+              name: 'Honeycomb',
+              calories: 408,
+              fat: 3.2,
+              carbs: 87,
+              protein: 6.5,
+              iron: '45%',
+            },
+            {
+              name: 'Donut',
+              calories: 452,
+              fat: 25.0,
+              carbs: 51,
+              protein: 4.9,
+              iron: '22%',
+            },
+            {
+              name: 'KitKat',
+              calories: 518,
+              fat: 26.0,
+              carbs: 65,
+              protein: 7,
+              iron: '6%',
+            },
+        ],
     },
     computed: {
         snackMessage: function () {
@@ -146,7 +230,7 @@ var app = new Vue({
                 const age = schoolData["age"];
                 const period = schoolData["period"];
                 if (autoGrade > period) {
-                    this.state.message.push(`キャラクター「${row[colNames["name"]]}」に指定された起算年数が、起算課程「${autoSchool}」の期間設定を超過しています`)
+                    this.state.message.push(`キャラクター「${data[colNames["name"]]}」に指定された起算年数が、起算課程「${autoSchool}」の期間設定を超過しています`);
                 } else {
                     // 指定教育課程の1年目の期間を設定
                     const startDate = new Date(autoYear - autoGrade + 1, month - 1, 1);
@@ -173,6 +257,15 @@ var app = new Vue({
                 };
             };
             return {};
+        },
+        getYearPassed(start, end) { // 経過年数（切り捨て）を返す
+            const years = Math.floor((end.getTime() - start.getTime()) / (365 * 24 * 60 * 60 * 1000));
+            return years;
+        },
+        getCharacterAndEvents(name, event) { // 指定キャラクター（name）のイベントだけ抽出して返す
+            const character = this.data.settings.character[name];
+            const events = event.events.character[name];
+            return [character, (events === undefined) ? [] : events];
         },
         createCategory() { // カテゴリ設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["category"]], { header: 0 });
@@ -320,6 +413,7 @@ var app = new Vue({
                 };
                 const row = {
                     "title": title,
+                    "category": category,
                     "characters": characters,
                     "detail": detail,
                 };
@@ -330,6 +424,7 @@ var app = new Vue({
             const keys = Object.keys(this.data.event);
             keys.sort();
             this.eventKeys = keys;
+            console.log(this.data.event);
         },
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
@@ -344,8 +439,60 @@ var app = new Vue({
                 this.state.errorSnack = true;
             };
         },
-        async createTimeline() { // タイムラインデータを作成
-            
+        async createTimelineData() { // タイムラインデータを作成
+            const vm = this;
+            let data = [];
+            this.eventKeys.forEach(function (key) {
+                const date = vm.data.event[key].date;
+                const eventData = vm.data.event[key].events;
+                // Template
+                let template = {
+                    "year": date.getFullYear(),
+                    "characters": [],
+                };
+                for (const [key, category] of Object.entries(vm.data.settings.category)) {
+                    const characters = category.characters;
+                    characters.forEach(function (characterName) {
+                        const character = vm.data.settings.character[characterName];
+                        template[`${characterName}_tl`] = {
+                            "name": characterName,
+                            "age": vm.getYearPassed(character.birthday, date),
+                            "school": vm.getCharacterSchoolInfo(characterName, date),
+                            "color": vm.data.settings.category[character.category].color,
+                        };
+                        template[`${characterName}_ev`] = [];
+                    });
+                };
+                // Events
+                const categories = ["all", "category", "character"];
+                for (const categoryName of categories) {
+                    if (eventData[categoryName].length > 0) { // イベントが存在する場合処理
+                        let row = Vue.util.extend({}, template);
+                        eventData[categoryName].forEach(function (event) {
+                            row.characters = vm.union(row.characters, event.characters);
+                            for (const characterName of event.characters) {
+                                row[`${characterName}_ev`].push(event);
+                            };
+                        });
+                        data.push(row);
+                    };
+                };
+            });
+            console.log(data);
+        },
+        async createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
+            const vm = this;
+            let headers = [{ text: '', value: "year" }, { text: '', value: "name" }];
+            for (const [key, category] of Object.entries(this.data.settings.category)) {
+                const characters = category.characters;
+                characters.forEach(function (character) {
+                    if (vm.characterSelected.indexOf(character) != -1) {
+                        headers.push({ text: '', value: `${character}_tl` });
+                        headers.push({ text: character, value: `${character}_ev` });
+                    };
+                });
+            };
+            this.timelineHeaders = headers;
         },
         async init() { // 初期化処理
             const vm = this;
@@ -356,8 +503,12 @@ var app = new Vue({
             await Object.keys(this.data.settings.category).forEach(key => {
                 vm.selectAllCharactersInCategory(key);
             });
+            await this.createTimelineData();
             this.state.loading = false;
             this.state.ready = true;
+        },
+        async update() {
+            await this.createTimelineColumns();
         },
         selectAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスにチェックを入れる
             const vm = this;
@@ -396,8 +547,14 @@ var app = new Vue({
             };
             return tf;
         },
-        update() { // 描画状態をアップデート
-
+        characterEventPadding(len, idx) {
+            if (idx == 0) {
+                return "pt-0 pb-1";
+            } else if (idx + 1 == len) {
+                return "pt-0 pb-2";
+            } else {
+                return "pb-1";
+            };
         },
     },
 });

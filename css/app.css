@@ -34,8 +34,10 @@ html {
   line-height: 2rem;
 }
 
-.v-timeline-item__opposite {
-  align-self: flex-start !important;
+/* Timeline */
+
+tbody > tr:hover {
+  background-color: transparent !important;
 }
 
 :root {
