@@ -30,35 +30,21 @@ html {
   font-size: 0.875em !important;
 }
 
-.line-height {
-  line-height: 2rem;
-}
-
 /* Timeline */
 
 tbody > tr:hover {
   background-color: transparent !important;
 }
 
-:root {
-  --timeline-opposite-item-width: 50px;
-  --timeline-line-width: 3px;
+.table-timeline-header,
+.table-timeline-cell {
+  /* width: 1em; */
 }
 
-.v-timeline--dense .v-timeline-item__opposite {
-  display: inline-block;
+.arrow-svg {
+  width: 100%;
 }
 
-.v-timeline-item__opposite {
-  flex: none;
-  min-width: var(--timeline-opposite-item-width);
-}
-
-/* line: divider in the middle is 96px wide by default */
-.v-application--is-ltr .v-timeline--dense:not(.v-timeline--reverse):before {
-  left: calc(
-    var(--timeline-opposite-item-width) + (96px - var(--timeline-line-width)) /
-      2
-  );
-  width: var(--timeline-line-width);
+col:nth-child(even) {
+  width: 20px;
 }

@@ -36,9 +36,11 @@ var app = new Vue({
                 "school": { "name": "名称", "period": "年数", "month": "開始月", "age": "開始年齢" },
                 "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以降を無視", "detail": "詳細" },
             },
-            "displayLimit": {"month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4},
+            "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
+            "backgroundColor": "rgb(247, 248, 247)",
+            "borderColor": "rgb(229, 229, 229)"
         },
-        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {} },
+        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "characters": [] },
         characterSelected: [],
         eventKeys: [],
         timelineHeaders: [],
@@ -130,6 +132,17 @@ var app = new Vue({
         snackMessage: function () {
             return this.state.message.join("<br>");
         },
+        colsTL: function () {
+            return this.data.characters.map(name => name + "_tl");
+        },
+        colsEV: function () {
+            return this.data.characters.map(name => name + "_ev");
+        },
+        timelineDataShow: function () {
+            return this.timelineData.filter((row) => {
+                return row.show;
+            });
+        },
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
@@ -139,6 +152,7 @@ var app = new Vue({
         characterSelected: 'update',
     },
     methods: {
+        // Utils
         getObjectKey(obj, val) { // dictをvalで逆引きする
             const key = Object.keys(obj).filter(key => {
                 return obj[key] === val;
@@ -177,6 +191,10 @@ var app = new Vue({
         fillTimeByZero(val) { // 時刻をゼロ埋めする
             return ("0" + String(val)).slice(-2);
         },
+        isBetween(target, start, end) { // targetがstart以上end未満かを返す
+            return (target >= start) && (target < end);
+        },
+        // File
         readFile: function (file) { // xlsx読み込み
             this.state.loading = true;
             const vm = this;
@@ -210,9 +228,7 @@ var app = new Vue({
             this.state.fileError = !valid;
             return valid;
         },
-        isBetween(target, start, end) { // targetがstart以上end未満かを返す
-            return (target >= start) && (target < end);
-        },
+        // Get Info
         getBirth(data) { // 誕生年を計算してDate形式で返す
             const colNames = this.defaults.colNames["character"];
             let birthday = this.convertSerial2Date(data[colNames["birthday"]]);
@@ -262,11 +278,10 @@ var app = new Vue({
             const years = Math.floor((end.getTime() - start.getTime()) / (365 * 24 * 60 * 60 * 1000));
             return years;
         },
-        getCharacterAndEvents(name, event) { // 指定キャラクター（name）のイベントだけ抽出して返す
-            const character = this.data.settings.character[name];
-            const events = event.events.character[name];
-            return [character, (events === undefined) ? [] : events];
+        isCharacterSelected(character) { // 該当キャラクターが選択されているかを返す
+            return this.characterSelected.indexOf(character) != -1;
         },
+        // Create Base Data
         createCategory() { // カテゴリ設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["category"]], { header: 0 });
             const colNames = this.defaults.colNames["category"];
@@ -300,14 +315,16 @@ var app = new Vue({
                     this.state.message.push(`キャラクター「${row[colNames["name"]]}」に指定されたカテゴリ「${row[colNames["category"]]}」の設定が存在しません`);
                     continue;
                 };
+                const characterName = String(row[colNames["name"]]);
                 let result = {
                     "category": String(row[colNames["category"]]),
                     "birthday": !(row[colNames["autoBirth"]]) ? this.convertSerial2Date(row[colNames["birthday"]]) : this.getBirth(row),
                     "schoolName": (colNames["schoolName"] in row)? String(row[colNames["schoolName"]]).split("_") : [],
                     "schoolOffset": (colNames["schoolOffset"] in row)? String(row[colNames["schoolOffset"]]).split("_") : 0,
                 };
-                this.data.settings.character[String(row[colNames["name"]])] = result;
-                this.data.settings.category[result.category].characters.push(String(row[colNames["name"]]));
+                this.data.characters.push(characterName);
+                this.data.settings.character[characterName] = result;
+                this.data.settings.category[result.category].characters.push(characterName);
             };
         },
         createCharacterSchoolInfo() { // キャラクタ設定から教育課程データを作成
@@ -439,6 +456,7 @@ var app = new Vue({
                 this.state.errorSnack = true;
             };
         },
+        // Create Table Data
         async createTimelineData() { // タイムラインデータを作成
             const vm = this;
             let data = [];
@@ -449,6 +467,8 @@ var app = new Vue({
                 let template = {
                     "year": date.getFullYear(),
                     "characters": [],
+                    "show": true,
+                    "isFirstEvent": true,
                 };
                 for (const [key, category] of Object.entries(vm.data.settings.category)) {
                     const characters = category.characters;
@@ -459,6 +479,7 @@ var app = new Vue({
                             "age": vm.getYearPassed(character.birthday, date),
                             "school": vm.getCharacterSchoolInfo(characterName, date),
                             "color": vm.data.settings.category[character.category].color,
+                            "needsArrow": true,
                         };
                         template[`${characterName}_ev`] = [];
                     });
@@ -478,22 +499,58 @@ var app = new Vue({
                     };
                 };
             });
-            console.log(data);
+            this.timelineData = data;
         },
         async createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
             const vm = this;
-            let headers = [{ text: '', value: "year" }, { text: '', value: "name" }];
+            const width = (100 - 6) / this.characterSelected.length;
+            let headers = [{ text: '', value: "year", class:[], width: "6%", }];
             for (const [key, category] of Object.entries(this.data.settings.category)) {
                 const characters = category.characters;
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
-                        headers.push({ text: '', value: `${character}_tl` });
-                        headers.push({ text: character, value: `${character}_ev` });
+                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header"], cellClass: ["pa-0", "table-timeline-cell"], width: "0%", });
+                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, });
                     };
                 });
             };
             this.timelineHeaders = headers;
         },
+        async updateTimelineData() { // characterSelectedの更新に合わせてshowの状態を更新
+            let currentAge = {};
+            this.colsTL.forEach(function (colName) {
+                currentAge[colName] = -1;
+            });
+            let currentYear = -1;
+            for (let index = 0; index < this.timelineData.length; index++) {
+                const row = this.timelineData[index];
+                // 列がshow状態かどうかを判断
+                if (this.intersection(this.characterSelected, row.characters).length > 0) {
+                    row.show = true;
+                    // Year列の表示状態変更
+                    if (currentYear != row.year) {
+                        currentYear = row.year;
+                        row.isFirstEvent = true;
+                    } else {
+                        row.isFirstEvent = false;
+                    };
+                    // 誕生日の切り替え状態を変更（needsArrow）
+                    for (tlKey of this.colsTL) {
+                        const tlTd = row[tlKey];
+                        if (tlTd.age != currentAge[tlKey]) {
+                            currentAge[tlKey] = tlTd.age;
+                            tlTd.needsArrow = true;
+                        } else {
+                            tlTd.needsArrow = false;
+                        };
+                    };
+                } else {
+                    // 非表示行
+                    row.show = false;
+                };
+            };
+        },
+        // Functions
         async init() { // 初期化処理
             const vm = this;
             this.state.ready = false;
@@ -509,7 +566,10 @@ var app = new Vue({
         },
         async update() {
             await this.createTimelineColumns();
+            await this.updateTimelineData();
+            await this.setBorders();
         },
+        // Filter
         selectAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスにチェックを入れる
             const vm = this;
             const characters = this.data.settings.category[category].characters;
@@ -529,31 +589,23 @@ var app = new Vue({
                 };
             });
         },
-        isCharacterSelected(character) { // 該当キャラクターが選択されているかを返す
-            return this.characterSelected.indexOf(character) != -1;
-        },
-        isFirstEvent(eventKey) { // イベントのキーを受け取ってその年で表示される最初のイベントかを返す
-            const targetYear = this.data.event[eventKey].date.getFullYear();
-            const index = this.eventKeys.indexOf(eventKey);
-            let tf = true;
-            for (let i = 0; i < index; i++) { // 自分より前のイベントが表示されるかを確認
-                if (targetYear == this.data.event[this.eventKeys[i]].date.getFullYear()) { // 同年のイベント
-                    const event = this.data.event[this.eventKeys[i]];
-                    if (this.intersection(event.characters, this.characterSelected).length > 0) {
-                        tf = false;
-                        break;
+        // Styling
+        setBorders() { // 適切なborderを設定
+            if ("timeline" in this.$refs) {
+                const vm = this;
+                let table = document.querySelector("#timeline");
+                let rows = table.querySelectorAll("tbody > tr");
+                this.zip(this.timelineDataShow, rows).forEach(function ([row, dom], index) {
+                    const borderColor = (row.isFirstEvent) ? vm.defaults.borderColor : "#FFFFFF";
+                    let tds = dom.querySelectorAll("td");
+                    for (let i = 0; i < tds.length; i++){
+                        // 各tdのデフォルトを無効化
+                        tds[i].style.borderBottom = "thin none rgba(0, 0, 0, 0)";
+                        if (i % 2 == 0) { // 年区切りのborderを設定
+                            tds[i].style.borderTop = `thin solid ${borderColor}`;
+                        };
                     };
-                };
-            };
-            return tf;
-        },
-        characterEventPadding(len, idx) {
-            if (idx == 0) {
-                return "pt-0 pb-1";
-            } else if (idx + 1 == len) {
-                return "pt-0 pb-2";
-            } else {
-                return "pb-1";
+                });
             };
         },
     },
