@@ -26,7 +26,9 @@ html {
 }
 
 .size,
-.v-label {
+.v-label,
+.v-list-item__content,
+.v-list-item__title {
   font-size: 0.875em !important;
 }
 
@@ -45,6 +47,6 @@ tbody > tr:hover {
   width: 100%;
 }
 
-col:nth-child(even) {
-  width: 20px;
+.border-none {
+  border: thin none rgba(0, 0, 0, 0) !important;
 }

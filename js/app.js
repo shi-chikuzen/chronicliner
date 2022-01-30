@@ -504,13 +504,13 @@ var app = new Vue({
         async createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
             const vm = this;
             const width = (100 - 6) / this.characterSelected.length;
-            let headers = [{ text: '', value: "year", class:[], width: "6%", }];
+            let headers = [{ text: '', value: "year", class:["border-none"], width: "6%", }];
             for (const [key, category] of Object.entries(this.data.settings.category)) {
                 const characters = category.characters;
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
-                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header"], cellClass: ["pa-0", "table-timeline-cell"], width: "0%", });
-                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, });
+                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell"], width: "0%", });
+                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"] });
                     };
                 });
             };

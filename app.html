@@ -133,12 +133,12 @@
                                                 <template v-slot:header="props">
                                                     <thead>
                                                         <tr>
-                                                            <th colspan="1"><!-- 年数列 --></th>
+                                                            <th colspan="1" class="border-none"><!-- 年数列 --></th>
                                                             <template v-for="(category, name) in data.settings.category">
                                                                 <th
                                                                 v-show="intersection(category.characters, characterSelected).length > 0"
                                                                 :colspan="intersection(category.characters, characterSelected).length * 2"
-                                                                :style="'background-color: ' + category.color + ';'"
+                                                                :style="'background-color: ' + category.color + '; border: thin solid white;'"
                                                                 class="white--text">
                                                                     {{ name }}
                                                                 </th>
