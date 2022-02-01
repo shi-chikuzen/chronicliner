@@ -38,7 +38,7 @@ var app = new Vue({
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
             "backgroundColor": "rgb(247, 248, 247)",
-            "borderColor": "rgb(229, 229, 229)"
+            "borderColor": "rgb(229, 229, 229)",
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "characters": [] },
         characterSelected: [],
@@ -281,6 +281,22 @@ var app = new Vue({
         isCharacterSelected(character) { // 該当キャラクターが選択されているかを返す
             return this.characterSelected.indexOf(character) != -1;
         },
+        getCardColor(category) { // カードの色を返却
+            if (category == "all") {
+                return '';
+            } else if (category in this.data.settings.category) {
+                return this.data.settings.category[category].color;
+            } else {
+                return this.defaults.backgroundColor;
+            };
+        },
+        returnCardTextClass(category) { // カードの表示モードを返却
+            if (category in this.data.settings.category) {
+                return 'white--text';
+            } else {
+                return '';
+            };
+        },
         // Create Base Data
         createCategory() { // カテゴリ設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["category"]], { header: 0 });
@@ -466,7 +482,9 @@ var app = new Vue({
                 // Template
                 let template = {
                     "year": date.getFullYear(),
+                    "date": date,
                     "characters": [],
+                    "displayLimit": vm.defaults.displayLimit[vm.data.event[key].limit],
                     "show": true,
                     "isFirstEvent": true,
                 };
@@ -504,13 +522,13 @@ var app = new Vue({
         async createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
             const vm = this;
             const width = (100 - 6) / this.characterSelected.length;
-            let headers = [{ text: '', value: "year", class:["border-none"], width: "6%", }];
+            let headers = [{ text: '', value: "year", class:["border-none"], cellClass: ["valign-top", "pt-4"], width: "6%", }];
             for (const [key, category] of Object.entries(this.data.settings.category)) {
                 const characters = category.characters;
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
-                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell"], width: "0%", });
-                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"] });
+                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell", "line-height-none", "font-size-zero"], width: "0%", });
+                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4"] });
                     };
                 });
             };
@@ -568,6 +586,7 @@ var app = new Vue({
             await this.createTimelineColumns();
             await this.updateTimelineData();
             await this.setBorders();
+            await this.setHeights();
         },
         // Filter
         selectAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスにチェックを入れる
@@ -603,8 +622,22 @@ var app = new Vue({
                         tds[i].style.borderBottom = "thin none rgba(0, 0, 0, 0)";
                         if (i % 2 == 0) { // 年区切りのborderを設定
                             tds[i].style.borderTop = `thin solid ${borderColor}`;
+                        } else {
+                            const color = tds[i].querySelector(".v-sheet").dataset.color;
+                            tds[i].style.backgroundColor = color;
                         };
                     };
+                });
+            };
+        },
+        setHeights() { //適切なHeightを設定
+            console.log("setHeights");
+            if ("timeline" in this.$refs) {
+                const table = document.querySelector("#timeline");
+                const tds = table.querySelectorAll("tbody > tr > td.table-timeline-cell");
+                tds.forEach(function (td) {
+                    const sheet = td.querySelector(".v-sheet");
+                    sheet.style.height = String(td.clientHeight) + "px";
                 });
             };
         },

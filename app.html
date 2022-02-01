@@ -114,7 +114,7 @@
                                         年表{{this.characterNames}}
                                     </v-card-title>
                                     <v-card-text class="px-6">
-                                        <v-expand-transition>
+                                        <v-expand-transition @after-appear="setHeights">
                                             <!-- Timeline Table -->
                                             <v-data-table
                                             id="timeline"
@@ -159,6 +159,7 @@
                                                             height="100%"
                                                             width="100%"
                                                             :color="(item[tlkey].age < 0) ? this.defaults.backgroundColor : item[tlkey].color"
+                                                            :data-color="(item[tlkey].age < 0) ? this.defaults.backgroundColor : item[tlkey].color"
                                                             v-bind="attrs"
                                                             v-on="on">
                                                                 <img v-if="item[tlkey].age > 0" v-show="item[tlkey].needsArrow" src="./svg/nofill.svg" alt="" class="arrow-svg">
@@ -188,7 +189,51 @@
                                                     </v-tooltip>
                                                 </template>
                                                 <template v-for="evkey in colsEV" v-slot:[`item.${evkey}`]="{ item }">
-                                                    ev
+                                                    <v-row class="pa-0">
+                                                        <v-col cols="12">
+                                                            <v-card
+                                                            v-for="event in item[evkey]"
+                                                            :color="getCardColor(event.category)"
+                                                            class="my-2"
+                                                            outlined>
+                                                                <v-tooltip bottom>
+                                                                    <template v-slot:activator="{ on, attrs }">
+                                                                        <v-card-text 
+                                                                        v-bind:class="returnCardTextClass(event.category)"
+                                                                        class="pa-2"
+                                                                        v-bind="attrs"
+                                                                        v-on="on">
+                                                                            <v-row>
+                                                                                <v-col cols="4" v-if="item.displayLimit > 0" class="font d-flex flex-column align-content-center align-center justify-center pr-0">
+                                                                                    <div
+                                                                                    style="font-size: 1.4rem;"
+                                                                                    class="font text-center">
+                                                                                        {{item.date.getMonth() + 1}}
+                                                                                    </div>
+                                                                                    <div
+                                                                                    v-if="item.displayLimit > 1"
+                                                                                    class="font text-center pt-1">
+                                                                                        {{item.date.getDate()}}TH
+                                                                                    </div>
+                                                                                    <div
+                                                                                    v-if="item.displayLimit > 2"
+                                                                                    class="font text-center">
+                                                                                        {{fillTimeByZero(item.date.getHours())}}:{{fillTimeByZero(item.date.getMinutes())}}
+                                                                                    </div>
+                                                                                </v-col>
+                                                                                <v-col cols="" class="pa-3 d-flex flex-column align-content-center align-center justify-center">
+                                                                                    <div class="text-center">
+                                                                                        {{event.title}}
+                                                                                    </div>
+                                                                                </v-col>
+                                                                            </v-row>
+                                                                        </v-card-text>
+                                                                    </template>
+                                                                    <span v-if="event.detail != ''" v-text="event.detail"></span>
+                                                                </v-tooltip>
+                                                            </v-card>
+                                                        </v-col>
+                                                    </v-row>
                                                 </template>
                                             </v-data-table>
                                         </v-expand-transition>

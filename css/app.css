@@ -38,15 +38,22 @@ tbody > tr:hover {
   background-color: transparent !important;
 }
 
-.table-timeline-header,
-.table-timeline-cell {
-  /* width: 1em; */
-}
-
 .arrow-svg {
   width: 100%;
 }
 
 .border-none {
   border: thin none rgba(0, 0, 0, 0) !important;
+}
+
+.line-height-none {
+  line-height: 0 !important;
+}
+
+.font-size-zero {
+  font-size: 0px !important;
+}
+
+.valign-top {
+  vertical-align: top !important;
 }
