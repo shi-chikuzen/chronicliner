@@ -124,7 +124,9 @@
                                             disable-sort="true"
                                             class="elevation-0"
                                             v-show="this.state.ready"
-                                            calculate-widths="true">
+                                            calculate-widths="true"
+                                            hide-default-footer
+                                            :items-per-page="-1">
                                                 <!-- colgroup（幅設定用デコイ） -->
                                                 <template #table-colgroup="">
                                                     <col>
@@ -153,13 +155,14 @@
                                                     </span>
                                                 </template>
                                                 <template v-for="tlkey in colsTL" v-slot:[`item.${tlkey}`]="{ item }">
-                                                    <v-tooltip right>
+                                                    <v-tooltip right
+                                                    :color="(item[tlkey].age >= 0) ? '' : 'rgba(0,0,0,0)'">
                                                         <template v-slot:activator="{ on, attrs }">
                                                             <v-sheet
                                                             height="100%"
                                                             width="100%"
-                                                            :color="(item[tlkey].age < 0) ? this.defaults.backgroundColor : item[tlkey].color"
-                                                            :data-color="(item[tlkey].age < 0) ? this.defaults.backgroundColor : item[tlkey].color"
+                                                            :color="(item[tlkey].age < 0) ? defaults.backgroundColor : item[tlkey].color"
+                                                            :data-color="(item[tlkey].age < 0) ? defaults.backgroundColor : item[tlkey].color"
                                                             v-bind="attrs"
                                                             v-on="on">
                                                                 <img v-if="item[tlkey].age > 0" v-show="item[tlkey].needsArrow" src="./svg/nofill.svg" alt="" class="arrow-svg">
@@ -177,7 +180,7 @@
                                                                 </v-col>
                                                                 <v-col cols="9">
                                                                     {{item[tlkey].name}}
-                                                                    <template v-if="item[tlkey].age >= 0">
+                                                                    <template>
                                                                         <br>年齢:&nbsp;{{item[tlkey].age}}<br>
                                                                     </template>
                                                                     <template v-if="'name' in item[tlkey].school">
@@ -196,7 +199,8 @@
                                                             :color="getCardColor(event.category)"
                                                             class="my-2"
                                                             outlined>
-                                                                <v-tooltip bottom>
+                                                                <v-tooltip bottom
+                                                                :color="(event.detail === '') ? 'rgba(0, 0, 0, 0)' : ''">
                                                                     <template v-slot:activator="{ on, attrs }">
                                                                         <v-card-text 
                                                                         v-bind:class="returnCardTextClass(event.category)"

@@ -402,13 +402,29 @@ var app = new Vue({
                 this.data.settings.character[name].school = result;
             };
         },
+        createCharacterBirthday() { // キャラクタ設定から誕生日イベントを生成
+            let rows = [];
+            const colNames = this.defaults.colNames["event"];
+            for (const [name, character] of Object.entries(this.data.settings.character)) {
+                let data = {};
+                data[colNames["category"]] = name;
+                data[colNames["date"]] = character.birthday;
+                data[colNames["limit"]] = "hour";
+                data[colNames["title"]] = `${name}誕生`;
+                rows.push(data);
+            };
+            return rows;
+        },
         createEvent() { // イベント設定を読み込んでフォーマット
-            const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["event"]], { header: 0 });
+            const xlsx = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["event"]], { header: 0 });
+            const birthday = this.createCharacterBirthday();
+            const data = xlsx.concat(birthday);
             const settings = this.defaults.displayLimit;
             const colNames = this.defaults.colNames["event"];
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 const category = String(data[i][colNames["category"]]);
-                const date = this.convertSerial2Date(data[i][colNames["date"]]);
+                const date_original = data[i][colNames["date"]];
+                const date = (typeof(date_original) === "object") ? date_original : this.convertSerial2Date(date_original);
                 const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
@@ -555,7 +571,7 @@ var app = new Vue({
                     // 誕生日の切り替え状態を変更（needsArrow）
                     for (tlKey of this.colsTL) {
                         const tlTd = row[tlKey];
-                        if (tlTd.age != currentAge[tlKey]) {
+                        if (tlTd.age != currentAge[tlKey] && tlTd.age >= 0) {
                             currentAge[tlKey] = tlTd.age;
                             tlTd.needsArrow = true;
                         } else {
@@ -616,6 +632,7 @@ var app = new Vue({
                 let rows = table.querySelectorAll("tbody > tr");
                 this.zip(this.timelineDataShow, rows).forEach(function ([row, dom], index) {
                     const borderColor = (row.isFirstEvent) ? vm.defaults.borderColor : "#FFFFFF";
+                    console.log(row, dom);
                     let tds = dom.querySelectorAll("td");
                     for (let i = 0; i < tds.length; i++){
                         // 各tdのデフォルトを無効化
