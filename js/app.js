@@ -146,6 +146,10 @@ var app = new Vue({
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
+        window.addEventListener("resize", this.windowResized);
+    },
+    beforeDestroy: function () {
+        window.removeEventListener("resize", this.windowResized);
     },
     watch: {
         workbook: 'init',
@@ -473,7 +477,6 @@ var app = new Vue({
             const keys = Object.keys(this.data.event);
             keys.sort();
             this.eventKeys = keys;
-            console.log(this.data.event);
         },
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
@@ -482,7 +485,6 @@ var app = new Vue({
                 await this.createCharacter();
                 await this.createCharacterSchoolInfo();
                 await this.createEvent();
-                console.info(this.data);
             };
             if (this.state.message.length != 0) {
                 this.state.errorSnack = true;
@@ -598,10 +600,15 @@ var app = new Vue({
             this.state.loading = false;
             this.state.ready = true;
         },
-        async update() {
+        async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う
+            await this.resetHeights();
             await this.createTimelineColumns();
             await this.updateTimelineData();
             await this.setBorders();
+            await this.setHeights();
+        },
+        async windowResized() { // windowサイズ変更時にtdの高さを設定し直す
+            await this.resetHeights();
             await this.setHeights();
         },
         // Filter
@@ -625,6 +632,15 @@ var app = new Vue({
             });
         },
         // Styling
+        returnCardClass(index, events) { // rowにあるカードの数に応じてマージン設定クラスを返す
+            const numEvents = events.length;
+            console.log(index, events)
+            if (numEvents == 0 || index == numEvents - 1) {
+                return "my-2";
+            } else {
+                return "mb-4 mt-2";
+            };
+        },
         setBorders() { // 適切なborderを設定
             if ("timeline" in this.$refs) {
                 const vm = this;
@@ -632,7 +648,6 @@ var app = new Vue({
                 let rows = table.querySelectorAll("tbody > tr");
                 this.zip(this.timelineDataShow, rows).forEach(function ([row, dom], index) {
                     const borderColor = (row.isFirstEvent) ? vm.defaults.borderColor : "#FFFFFF";
-                    console.log(row, dom);
                     let tds = dom.querySelectorAll("td");
                     for (let i = 0; i < tds.length; i++){
                         // 各tdのデフォルトを無効化
@@ -648,13 +663,22 @@ var app = new Vue({
             };
         },
         setHeights() { //適切なHeightを設定
-            console.log("setHeights");
             if ("timeline" in this.$refs) {
                 const table = document.querySelector("#timeline");
                 const tds = table.querySelectorAll("tbody > tr > td.table-timeline-cell");
                 tds.forEach(function (td) {
                     const sheet = td.querySelector(".v-sheet");
                     sheet.style.height = String(td.clientHeight) + "px";
+                });
+            };
+        },
+        resetHeights() { // setHeightsで設定したHeightをリセットする
+            if ("timeline" in this.$refs) {
+                const table = document.querySelector("#timeline");
+                const tds = table.querySelectorAll("tbody > tr > td.table-timeline-cell");
+                tds.forEach(function (td) {
+                    const sheet = td.querySelector(".v-sheet");
+                    sheet.style.height = "0px";
                 });
             };
         },

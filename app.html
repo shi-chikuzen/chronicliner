@@ -195,14 +195,14 @@
                                                     <v-row class="pa-0">
                                                         <v-col cols="12">
                                                             <v-card
-                                                            v-for="event in item[evkey]"
+                                                            v-for="(event, index) in item[evkey]"
                                                             :color="getCardColor(event.category)"
-                                                            class="my-2"
+                                                            :class="returnCardClass(index, item[evkey])"
                                                             outlined>
                                                                 <v-tooltip bottom
                                                                 :color="(event.detail === '') ? 'rgba(0, 0, 0, 0)' : ''">
                                                                     <template v-slot:activator="{ on, attrs }">
-                                                                        <v-card-text 
+                                                                        <v-card-text
                                                                         v-bind:class="returnCardTextClass(event.category)"
                                                                         class="pa-2"
                                                                         v-bind="attrs"
