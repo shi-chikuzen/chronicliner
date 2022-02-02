@@ -113,7 +113,7 @@
                                     <v-card-title class="px-6 size">
                                         年表{{this.characterNames}}
                                     </v-card-title>
-                                    <v-card-text class="px-6">
+                                    <v-card-text class="px-6" id="timelineParent">
                                         <v-expand-transition @after-appear="setHeights">
                                             <!-- Timeline Table -->
                                             <v-data-table
@@ -122,10 +122,11 @@
                                             :headers="timelineHeaders"
                                             :items="timelineDataShow"
                                             disable-sort="true"
-                                            class="elevation-0"
+                                            class="elevation-0 overflow-y-auto"
                                             v-show="this.state.ready"
                                             calculate-widths="true"
                                             hide-default-footer
+                                            :height="this.tableHeight"
                                             :items-per-page="-1">
                                                 <!-- colgroup（幅設定用デコイ） -->
                                                 <template #table-colgroup="">
@@ -150,13 +151,28 @@
                                                 </template>
                                                 <!-- tbodyの置き換え -->
                                                 <template v-slot:item.year="{ item }">
-                                                    <span v-show="item.isFirstEvent" class="font" style="font-size: 1.1em;">
-                                                        {{item.year}}
+                                                    <span v-show="item.isFirstEvent">
+                                                        <div class="d-flex flex-column align-content-center justify-center align-center">
+                                                            <div class="text-center font" style="font-size: 1.1em;">{{item.year}}</div>
+                                                            <v-btn
+                                                            class="ma-0"
+                                                            text
+                                                            icon
+                                                            color="primary"
+                                                            @click="toggleYearSummaryShow(item.year); update();">
+                                                                <v-icon v-if="yearSummary[item.year].show" class="size">
+                                                                    mdi-plus
+                                                                </v-icon>
+                                                                <v-icon v-else class="size">
+                                                                    mdi-minus
+                                                                </v-icon>
+                                                            </v-btn>
+                                                        </div>
                                                     </span>
                                                 </template>
                                                 <template v-for="tlkey in colsTL" v-slot:[`item.${tlkey}`]="{ item }">
                                                     <v-tooltip right
-                                                    :color="(item[tlkey].age >= 0) ? '' : 'rgba(0,0,0,0)'">
+                                                    :color="(item[tlkey].age >= 0 && item[tlkey].summary == false) ? '' : 'rgba(0,0,0,0)'">
                                                         <template v-slot:activator="{ on, attrs }">
                                                             <v-sheet
                                                             height="100%"
@@ -170,7 +186,7 @@
                                                             </v-sheet>
                                                         </template>
                                                         <span>
-                                                            <v-row>
+                                                            <v-row v-show="item[tlkey].age >= 0 && item[tlkey].summary == false">
                                                                 <v-col cols="3" class="d-flex align-center">
                                                                     <v-icon
                                                                     dark
@@ -226,14 +242,14 @@
                                                                                     </div>
                                                                                 </v-col>
                                                                                 <v-col cols="" class="pa-3 d-flex flex-column align-content-center align-center justify-center">
-                                                                                    <div class="text-center">
-                                                                                        {{event.title}}
+                                                                                    <div class="text-center"
+                                                                                    v-text="event.title" style="white-space: pre-line;">
                                                                                     </div>
                                                                                 </v-col>
                                                                             </v-row>
                                                                         </v-card-text>
                                                                     </template>
-                                                                    <span v-if="event.detail != ''" v-text="event.detail"></span>
+                                                                    <span v-if="event.detail != ''" v-text="event.detail" style="white-space: pre-line;"></span>
                                                                 </v-tooltip>
                                                             </v-card>
                                                         </v-col>

@@ -22,13 +22,6 @@ var app = new Vue({
         state: { "fileError": false, "ready": false, "loading": false, "message": [], "errorSnack": false },
         defaults: {
             "color": ["#47cacc", "#63bcc9", "#cdb3d4", "#e7b7c8", "#ffbe88"],
-            "gradient": [
-                "linear-gradient(127deg, #47cacc, #cdb3d4)",
-                "linear-gradient(127deg, #63bcc9, #47cacc)",
-                "linear-gradient(127deg, #cdb3d4, #ffbe88)",
-                "linear-gradient(127deg, #e7b7c8, #cdb3d4)",
-                "linear-gradient(127deg, #ffbe88, #e7b7c8)",
-            ],
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント" },
             "colNames": {
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
@@ -45,88 +38,8 @@ var app = new Vue({
         eventKeys: [],
         timelineHeaders: [],
         timelineData: [],
-        desserts: [
-            {
-              name: 'Frozen Yogurt',
-              calories: 159,
-              fat: 6.0,
-              carbs: 24,
-              protein: 4.0,
-              iron: '1%',
-            },
-            {
-              name: 'Ice cream sandwich',
-              calories: 237,
-              fat: 9.0,
-              carbs: 37,
-              protein: 4.3,
-              iron: '1%',
-            },
-            {
-              name: 'Eclair',
-              calories: 262,
-              fat: 16.0,
-              carbs: 23,
-              protein: 6.0,
-              iron: '7%',
-            },
-            {
-              name: 'Cupcake',
-              calories: 305,
-              fat: 3.7,
-              carbs: 67,
-              protein: 4.3,
-              iron: '8%',
-            },
-            {
-              name: 'Gingerbread',
-              calories: 356,
-              fat: 16.0,
-              carbs: 49,
-              protein: 3.9,
-              iron: '16%',
-            },
-            {
-              name: 'Jelly bean',
-              calories: 375,
-              fat: 0.0,
-              carbs: 94,
-              protein: 0.0,
-              iron: '0%',
-            },
-            {
-              name: 'Lollipop',
-              calories: 392,
-              fat: 0.2,
-              carbs: 98,
-              protein: 0,
-              iron: '2%',
-            },
-            {
-              name: 'Honeycomb',
-              calories: 408,
-              fat: 3.2,
-              carbs: 87,
-              protein: 6.5,
-              iron: '45%',
-            },
-            {
-              name: 'Donut',
-              calories: 452,
-              fat: 25.0,
-              carbs: 51,
-              protein: 4.9,
-              iron: '22%',
-            },
-            {
-              name: 'KitKat',
-              calories: 518,
-              fat: 26.0,
-              carbs: 65,
-              protein: 7,
-              iron: '6%',
-            },
-        ],
+        yearSummary: {},
+        tableHeight: 0,
     },
     computed: {
         snackMessage: function () {
@@ -139,14 +52,28 @@ var app = new Vue({
             return this.data.characters.map(name => name + "_ev");
         },
         timelineDataShow: function () {
-            return this.timelineData.filter((row) => {
-                return row.show;
-            });
+            let data = [];
+            let currentYear = -1;
+            for (const row of this.timelineData) {
+                const summarize = this.yearSummary[row.year].show;
+                if ((currentYear != row.year) && (summarize == true)) {
+                    data.push(this.yearSummary[row.year]);
+                } else if (summarize == true) {
+                    // rowをskipする
+                } else {
+                    data.push(row);
+                };
+                currentYear = row.year;
+            };
+            return data;
         },
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
         window.addEventListener("resize", this.windowResized);
+        this.$nextTick(function () {
+            this.setTableHeight();
+        });
     },
     beforeDestroy: function () {
         window.removeEventListener("resize", this.windowResized);
@@ -301,6 +228,14 @@ var app = new Vue({
                 return '';
             };
         },
+        returnCardClass(index, events) { // rowにあるカードの数に応じてマージン設定クラスを返す
+            const numEvents = events.length;
+            if (numEvents == 0 || index == numEvents - 1) {
+                return "my-2";
+            } else {
+                return "mb-4 mt-2";
+            };
+        },
         // Create Base Data
         createCategory() { // カテゴリ設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["category"]], { header: 0 });
@@ -308,7 +243,6 @@ var app = new Vue({
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 let row = {
                     "color": (colNames["color"] in data[i]) ? String(data[i]["カテゴリ色"]) : this.defaults.color[i % this.defaults.color.length],
-                    "bgcolor": (colNames["color"] in data[i]) ? String(data[i]["カテゴリ色"]) : this.defaults.gradient[i % this.defaults.color.length],
                     "characters": [],
                 };
                 this.data.settings.category[String(data[i][colNames["name"]])] = row;
@@ -478,6 +412,40 @@ var app = new Vue({
             keys.sort();
             this.eventKeys = keys;
         },
+        createYearSummary() { // 年ごとのサマリーデータをフォーマットする
+            let yearSummary = {}
+            for (const key of this.eventKeys) {
+                const year = Number(key.slice(0, 4));
+                const date = new Date(year, 0, 1);
+                yearSummary[year] = {
+                    "year": year,
+                    "date": date,
+                    "characters": this.data.characters,
+                    "displayLimit": this.defaults.displayLimit["month"],
+                    "show": false,
+                    "isFirstEvent": true,
+                };
+                for (characterName of this.data.characters) {
+                    const character = this.data.settings.character[characterName];
+                    yearSummary[year][`${characterName}_ev`] = [{
+                        "title": "",
+                        "category": characterName,
+                        "characters": [characterName],
+                        "numEvents": { "all": 0, "category": 0, "character": 0 },
+                        "detail": "",
+                    }];
+                    yearSummary[year][`${characterName}_tl`] = {
+                        "name": characterName,
+                        "age": this.getYearPassed(character.birthday, date),
+                        "school": {},
+                        "color": this.data.settings.category[character.category].color,
+                        "needsArrow": true,
+                        "summary": true,
+                    };
+                };
+            };
+            this.yearSummary = yearSummary;
+        },
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
                 await this.createCategory();
@@ -485,17 +453,19 @@ var app = new Vue({
                 await this.createCharacter();
                 await this.createCharacterSchoolInfo();
                 await this.createEvent();
+                await this.createYearSummary();
             };
             if (this.state.message.length != 0) {
                 this.state.errorSnack = true;
             };
         },
         // Create Table Data
-        async createTimelineData() { // タイムラインデータを作成
+        createTimelineData() { // タイムラインデータを作成
             const vm = this;
             let data = [];
             this.eventKeys.forEach(function (key) {
                 const date = vm.data.event[key].date;
+                const year = date.getFullYear();
                 const eventData = vm.data.event[key].events;
                 // Template
                 let template = {
@@ -516,6 +486,7 @@ var app = new Vue({
                             "school": vm.getCharacterSchoolInfo(characterName, date),
                             "color": vm.data.settings.category[character.category].color,
                             "needsArrow": true,
+                            "summary": false,
                         };
                         template[`${characterName}_ev`] = [];
                     });
@@ -529,6 +500,7 @@ var app = new Vue({
                             row.characters = vm.union(row.characters, event.characters);
                             for (const characterName of event.characters) {
                                 row[`${characterName}_ev`].push(event);
+                                vm.yearSummary[year][`${characterName}_ev`][0]["numEvents"][categoryName] += 1;
                             };
                         });
                         data.push(row);
@@ -537,7 +509,7 @@ var app = new Vue({
             });
             this.timelineData = data;
         },
-        async createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
+        createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
             const vm = this;
             const width = (100 - 6) / this.characterSelected.length;
             let headers = [{ text: '', value: "year", class:["border-none"], cellClass: ["valign-top", "pt-4"], width: "6%", }];
@@ -552,7 +524,7 @@ var app = new Vue({
             };
             this.timelineHeaders = headers;
         },
-        async updateTimelineData() { // characterSelectedの更新に合わせてshowの状態を更新
+        updateTimelineData() { // characterSelectedの更新に合わせてshowの状態を更新
             let currentAge = {};
             this.colsTL.forEach(function (colName) {
                 currentAge[colName] = -1;
@@ -586,6 +558,14 @@ var app = new Vue({
                 };
             };
         },
+        updateYearSummary() { // 集計したイベント数をもとにtitleを設定する
+            for (const year in this.yearSummary) {
+                for (const characterName of this.data.characters) {
+                    const numEvents = this.yearSummary[year][`${characterName}_ev`][0].numEvents;
+                    this.yearSummary[year][`${characterName}_ev`][0].title = `ALL: ${numEvents.all}件\nカテゴリ: ${numEvents.category}件\nキャラクタ: ${numEvents.character}件`;
+                };
+            };
+        },
         // Functions
         async init() { // 初期化処理
             const vm = this;
@@ -593,10 +573,12 @@ var app = new Vue({
             this.state.message = [];
             this.data = JSON.parse(JSON.stringify(this.defaults.data));
             await this.formatData();
+            await this.updateYearSummary();
             await Object.keys(this.data.settings.category).forEach(key => {
                 vm.selectAllCharactersInCategory(key);
             });
             await this.createTimelineData();
+            await this.updateTimelineData();
             this.state.loading = false;
             this.state.ready = true;
         },
@@ -608,8 +590,12 @@ var app = new Vue({
             await this.setHeights();
         },
         async windowResized() { // windowサイズ変更時にtdの高さを設定し直す
+            await this.setTableHeight();
             await this.resetHeights();
             await this.setHeights();
+        },
+        toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
+            this.yearSummary[year].show = !this.yearSummary[year].show;
         },
         // Filter
         selectAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスにチェックを入れる
@@ -632,15 +618,6 @@ var app = new Vue({
             });
         },
         // Styling
-        returnCardClass(index, events) { // rowにあるカードの数に応じてマージン設定クラスを返す
-            const numEvents = events.length;
-            console.log(index, events)
-            if (numEvents == 0 || index == numEvents - 1) {
-                return "my-2";
-            } else {
-                return "mb-4 mt-2";
-            };
-        },
         setBorders() { // 適切なborderを設定
             if ("timeline" in this.$refs) {
                 const vm = this;
@@ -681,6 +658,12 @@ var app = new Vue({
                     sheet.style.height = "0px";
                 });
             };
+        },
+        setTableHeight() {
+            const windowHeight = window.innerHeight;
+            const sumPadding = 46;
+            const tableTop = document.querySelector("#timelineParent").getBoundingClientRect();
+            this.tableHeight = windowHeight - tableTop.y - sumPadding;
         },
     },
 });
