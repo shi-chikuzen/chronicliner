@@ -25,13 +25,14 @@ var app = new Vue({
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント" },
             "colNames": {
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
-                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "schoolName": "教育課程名", "schoolOffset": "開始年齢調整", "autoBirth": "誕生年自動計算", "autoYear": "起算年", "autoSchool": "起算課程", "autoGrade": "起算学年" },
+                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "schoolName": "教育課程名", "schoolOffset": "開始年齢調整", "autoBirth": "誕生年自動計算", "autoYear": "起算年", "autoSchool": "起算課程", "autoGrade": "起算学年" },
                 "school": { "name": "名称", "period": "年数", "month": "開始月", "age": "開始年齢" },
                 "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以降を無視", "detail": "詳細" },
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
             "backgroundColor": "rgb(247, 248, 247)",
             "borderColor": "rgb(229, 229, 229)",
+            "summaryBackgroundColor": "#DADADA"
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "characters": [] },
         characterSelected: [],
@@ -125,6 +126,9 @@ var app = new Vue({
         isBetween(target, start, end) { // targetがstart以上end未満かを返す
             return (target >= start) && (target < end);
         },
+        isWithin(target, start, end) { // targetがstart以上end以下かを返す
+            return (target >= start) && (target <= end);
+        },
         // File
         readFile: function (file) { // xlsx読み込み
             this.state.loading = true;
@@ -212,9 +216,14 @@ var app = new Vue({
         isCharacterSelected(character) { // 該当キャラクターが選択されているかを返す
             return this.characterSelected.indexOf(character) != -1;
         },
-        getCardColor(category) { // カードの色を返却
+        isCharacterDied(character, date) { // 該当日に該当キャラクターが死んでいるかを返す
+            return !this.isWithin(date, date, character.death);
+        },
+        returnCardColor(category) { // カードの色を返却
             if (category == "all") {
                 return '';
+            } else if (category == "summary") {
+                return this.defaults.summaryBackgroundColor;
             } else if (category in this.data.settings.category) {
                 return this.data.settings.category[category].color;
             } else {
@@ -235,6 +244,9 @@ var app = new Vue({
             } else {
                 return "mb-4 mt-2";
             };
+        },
+        returnTimelineColor(data) { // 矢印列の背景色を返す
+            return (data.age < 0 || data.died == true) ? this.defaults.backgroundColor : data.color;
         },
         // Create Base Data
         createCategory() { // カテゴリ設定を読み込んでフォーマット
@@ -273,6 +285,7 @@ var app = new Vue({
                 let result = {
                     "category": String(row[colNames["category"]]),
                     "birthday": !(row[colNames["autoBirth"]]) ? this.convertSerial2Date(row[colNames["birthday"]]) : this.getBirth(row),
+                    "death": (colNames["death"] in row) ? this.convertSerial2Date(row[colNames["death"]]) : null,
                     "schoolName": (colNames["schoolName"] in row)? String(row[colNames["schoolName"]]).split("_") : [],
                     "schoolOffset": (colNames["schoolOffset"] in row)? String(row[colNames["schoolOffset"]]).split("_") : 0,
                 };
@@ -353,10 +366,26 @@ var app = new Vue({
             };
             return rows;
         },
+        createCharacterDeathday() { // キャラクタ設定から死亡イベントを生成
+            let rows = [];
+            const colNames = this.defaults.colNames["event"];
+            for (const [name, character] of Object.entries(this.data.settings.character)) {
+                if (!(character.death === null)) {
+                    let data = {};
+                    data[colNames["category"]] = name;
+                    data[colNames["date"]] = character.death;
+                    data[colNames["limit"]] = "hour";
+                    data[colNames["title"]] = `${name}死亡`;
+                    rows.push(data);
+                };
+            };
+            return rows;
+        },
         createEvent() { // イベント設定を読み込んでフォーマット
             const xlsx = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["event"]], { header: 0 });
             const birthday = this.createCharacterBirthday();
-            const data = xlsx.concat(birthday);
+            const deathday = this.createCharacterDeathday();
+            const data = xlsx.concat(birthday).concat(deathday);
             const settings = this.defaults.displayLimit;
             const colNames = this.defaults.colNames["event"];
             for (let i = 0; i < data.length; i++) { // 各データを処理
@@ -427,9 +456,10 @@ var app = new Vue({
                 };
                 for (characterName of this.data.characters) {
                     const character = this.data.settings.character[characterName];
+                    const characterDied = (character.death === null) ? false : this.isCharacterDied(character, date);
                     yearSummary[year][`${characterName}_ev`] = [{
                         "title": "",
-                        "category": characterName,
+                        "category": "summary",
                         "characters": [characterName],
                         "numEvents": { "all": 0, "category": 0, "character": 0 },
                         "detail": "",
@@ -441,6 +471,8 @@ var app = new Vue({
                         "color": this.data.settings.category[character.category].color,
                         "needsArrow": true,
                         "summary": true,
+                        "died": characterDied,
+                        "firstAfterDied": this.isBetween(character.death, new Date(year - 1, 0, 1), new Date(year, 0, 1)),
                     };
                 };
             };
@@ -480,6 +512,7 @@ var app = new Vue({
                     const characters = category.characters;
                     characters.forEach(function (characterName) {
                         const character = vm.data.settings.character[characterName];
+                        const characterDied = (character.death === null) ? false : vm.isCharacterDied(character, date);
                         template[`${characterName}_tl`] = {
                             "name": characterName,
                             "age": vm.getYearPassed(character.birthday, date),
@@ -487,6 +520,7 @@ var app = new Vue({
                             "color": vm.data.settings.category[character.category].color,
                             "needsArrow": true,
                             "summary": false,
+                            "died": characterDied,
                         };
                         template[`${characterName}_ev`] = [];
                     });
@@ -526,8 +560,10 @@ var app = new Vue({
         },
         updateTimelineData() { // characterSelectedの更新に合わせてshowの状態を更新
             let currentAge = {};
+            let currentState = {};
             this.colsTL.forEach(function (colName) {
                 currentAge[colName] = -1;
+                currentState[colName] = false;
             });
             let currentYear = -1;
             for (let index = 0; index < this.timelineData.length; index++) {
@@ -542,7 +578,7 @@ var app = new Vue({
                     } else {
                         row.isFirstEvent = false;
                     };
-                    // 誕生日の切り替え状態を変更（needsArrow）
+                    // 誕生日の切り替え状態と死亡状況を変更（needsArrow）
                     for (tlKey of this.colsTL) {
                         const tlTd = row[tlKey];
                         if (tlTd.age != currentAge[tlKey] && tlTd.age >= 0) {
@@ -550,6 +586,12 @@ var app = new Vue({
                             tlTd.needsArrow = true;
                         } else {
                             tlTd.needsArrow = false;
+                        };
+                        if (tlTd.died != currentState[tlKey]) {
+                            currentState[tlKey] = tlTd.died;
+                            tlTd.firstAfterDied = true;
+                        } else {
+                            tlTd.firstAfterDied = false;
                         };
                     };
                 } else {
@@ -573,11 +615,11 @@ var app = new Vue({
             this.state.message = [];
             this.data = JSON.parse(JSON.stringify(this.defaults.data));
             await this.formatData();
-            await this.updateYearSummary();
             await Object.keys(this.data.settings.category).forEach(key => {
                 vm.selectAllCharactersInCategory(key);
             });
             await this.createTimelineData();
+            this.updateYearSummary();
             await this.updateTimelineData();
             this.state.loading = false;
             this.state.ready = true;
@@ -586,6 +628,7 @@ var app = new Vue({
             await this.resetHeights();
             await this.createTimelineColumns();
             await this.updateTimelineData();
+            await this.setArrorFirstDied();
             await this.setBorders();
             await this.setHeights();
         },
@@ -659,11 +702,21 @@ var app = new Vue({
                 });
             };
         },
-        setTableHeight() {
+        setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
             const windowHeight = window.innerHeight;
             const sumPadding = 46;
             const tableTop = document.querySelector("#timelineParent").getBoundingClientRect();
             this.tableHeight = windowHeight - tableTop.y - sumPadding;
         },
+        setArrorFirstDied() { // 死んだ次のイベントにArrowを設定する
+            const arrows = document.querySelectorAll(".svgFill");
+            for (const arrow of arrows) {
+                const g = arrow.querySelectorAll('g');
+                g.forEach(function (element) {
+                    element.setAttribute('fill', arrow.dataset.color);
+                });
+            };
+        },
     },
 });
+
