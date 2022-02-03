@@ -46,14 +46,6 @@ tbody > tr:hover {
   border: thin none rgba(0, 0, 0, 0) !important;
 }
 
-.line-height-none {
-  line-height: 0 !important;
-}
-
-.font-size-zero {
-  font-size: 0px !important;
-}
-
 .valign-top {
   vertical-align: top !important;
 }

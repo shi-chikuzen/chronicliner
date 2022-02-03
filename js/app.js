@@ -563,7 +563,7 @@ var app = new Vue({
                 const characters = category.characters;
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
-                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell", "line-height-none", "font-size-zero"], width: "0%", });
+                        headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell", "valign-top"], width: "0%", });
                         headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4", "valign-top"] });
                     };
                 });
@@ -637,17 +637,13 @@ var app = new Vue({
             this.state.ready = true;
         },
         async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う
-            await this.resetHeights();
             await this.createTimelineColumns();
             await this.updateTimelineData();
             await this.setArrorFirstDied();
             await this.setBorders();
-            await this.setHeights();
         },
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
-            await this.resetHeights();
-            await this.setHeights();
         }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
             this.yearSummary[year].show = !this.yearSummary[year].show;
@@ -691,26 +687,6 @@ var app = new Vue({
                             tds[i].style.backgroundColor = color;
                         };
                     };
-                });
-            };
-        },
-        setHeights() { //適切なHeightを設定
-            if ("timeline" in this.$refs) {
-                const table = document.querySelector("#timeline");
-                const tds = table.querySelectorAll("tbody > tr > td.table-timeline-cell");
-                tds.forEach(function (td) {
-                    const sheet = td.querySelector(".v-sheet");
-                    sheet.style.height = String(td.clientHeight) + "px";
-                });
-            };
-        },
-        resetHeights() { // setHeightsで設定したHeightをリセットする
-            if ("timeline" in this.$refs) {
-                const table = document.querySelector("#timeline");
-                const tds = table.querySelectorAll("tbody > tr > td.table-timeline-cell");
-                tds.forEach(function (td) {
-                    const sheet = td.querySelector(".v-sheet");
-                    sheet.style.height = "0px";
                 });
             };
         },
