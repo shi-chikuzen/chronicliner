@@ -528,8 +528,9 @@ var app = new Vue({
                 // Events
                 const categories = ["all", "category", "character"];
                 for (const categoryName of categories) {
+                    // let row = Vue.util.extend({}, template);
                     if (eventData[categoryName].length > 0) { // イベントが存在する場合処理
-                        let row = Vue.util.extend({}, template);
+                        let row = jQuery.extend(true, {}, template);
                         eventData[categoryName].forEach(function (event) {
                             row.characters = vm.union(row.characters, event.characters);
                             for (const characterName of event.characters) {
@@ -552,7 +553,7 @@ var app = new Vue({
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
                         headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell", "line-height-none", "font-size-zero"], width: "0%", });
-                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4"] });
+                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4", "valign-top"] });
                     };
                 });
             };
