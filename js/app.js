@@ -41,6 +41,7 @@ var app = new Vue({
         timelineData: [],
         yearSummary: {},
         tableHeight: 0,
+        windowTimer: 0,
     },
     computed: {
         snackMessage: function () {
@@ -129,6 +130,15 @@ var app = new Vue({
         isWithin(target, start, end) { // targetがstart以上end以下かを返す
             return (target >= start) && (target <= end);
         },
+        formatDate(input) {
+            if (typeof (input) == "object") {
+                return input;
+            } else if (typeof (input) == "string") {
+                return new Date(Date.parse(input));
+            } else {
+                return this.convertSerial2Date(input);
+            };
+        },
         // File
         readFile: function (file) { // xlsx読み込み
             this.state.loading = true;
@@ -199,12 +209,14 @@ var app = new Vue({
         },
         getCharacterSchoolInfo(name, date) { // 指定キャラクターの該当Dateの教育課程情報を返す
             const character = this.data.settings.character[name];
-            const schools = character.school.details;
-            for (let index = 0; index < schools.length; index++) {
-                const school = schools[index];
-                if (this.isBetween(date, school.start, school.end)) {
-                    const grade = Math.floor((date.getTime() - school.start.getTime()) / (365*24*60*60*1000)) + 1;
-                    return {"name": school.name, "grade": grade};
+            if (!(character.school === null)) {
+                const schools = character.school.details;
+                for (let index = 0; index < schools.length; index++) {
+                    const school = schools[index];
+                    if (this.isBetween(date, school.start, school.end)) {
+                        const grade = Math.floor((date.getTime() - school.start.getTime()) / (365*24*60*60*1000)) + 1;
+                        return {"name": school.name, "grade": grade};
+                    };
                 };
             };
             return {};
@@ -286,6 +298,7 @@ var app = new Vue({
                     "category": String(row[colNames["category"]]),
                     "birthday": !(row[colNames["autoBirth"]]) ? this.convertSerial2Date(row[colNames["birthday"]]) : this.getBirth(row),
                     "death": (colNames["death"] in row) ? this.convertSerial2Date(row[colNames["death"]]) : null,
+                    "school": null,
                     "schoolName": (colNames["schoolName"] in row)? String(row[colNames["schoolName"]]).split("_") : [],
                     "schoolOffset": (colNames["schoolOffset"] in row)? String(row[colNames["schoolOffset"]]).split("_") : 0,
                 };
@@ -390,8 +403,7 @@ var app = new Vue({
             const colNames = this.defaults.colNames["event"];
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 const category = String(data[i][colNames["category"]]);
-                const date_original = data[i][colNames["date"]];
-                const date = (typeof(date_original) === "object") ? date_original : this.convertSerial2Date(date_original);
+                const date = this.formatDate(data[i][colNames["date"]]);
                 const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
@@ -418,7 +430,7 @@ var app = new Vue({
                     continue;
                 };
                 // イベントを設定
-                const key = date.toISOString() + String(settings[limit]);
+                const key = moment(date).format() + String(settings[limit]);
                 if (Object.keys(this.data.event).indexOf(key) == -1) {
                     this.data.event[key] = {
                         "date": date,
@@ -528,7 +540,6 @@ var app = new Vue({
                 // Events
                 const categories = ["all", "category", "character"];
                 for (const categoryName of categories) {
-                    // let row = Vue.util.extend({}, template);
                     if (eventData[categoryName].length > 0) { // イベントが存在する場合処理
                         let row = jQuery.extend(true, {}, template);
                         eventData[categoryName].forEach(function (event) {
@@ -633,11 +644,11 @@ var app = new Vue({
             await this.setBorders();
             await this.setHeights();
         },
-        async windowResized() { // windowサイズ変更時にtdの高さを設定し直す
+        windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
             await this.resetHeights();
             await this.setHeights();
-        },
+        }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
             this.yearSummary[year].show = !this.yearSummary[year].show;
         },
