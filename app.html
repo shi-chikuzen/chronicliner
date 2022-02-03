@@ -71,8 +71,9 @@
                                             vertical
                                             v-show="this.state.ready">
                                                 <v-tab
-                                                v-for="(value, name) in this.data.settings.category">
-                                                    {{name}}
+                                                v-for="(value, name) in this.data.settings.category"
+                                                class="justify-start">
+                                                    <span>{{name}}</span>
                                                 </v-tab>
                                                 <v-tab-item
                                                 v-for="(value, name) in this.data.settings.category">
