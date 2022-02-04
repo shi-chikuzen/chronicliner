@@ -1,7 +1,7 @@
 *.ai
 data/mydata
 .DS_Store
-
+document/
 
 # Created by https://www.toptal.com/developers/gitignore/api/web,vuejs,vue,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=web,vuejs,vue,python
