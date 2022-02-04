@@ -27,9 +27,10 @@ var app = new Vue({
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
                 "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "schoolName": "教育課程名", "schoolOffset": "開始年齢調整", "autoBirth": "誕生年自動計算", "autoYear": "起算年", "autoSchool": "起算課程", "autoGrade": "起算学年" },
                 "school": { "name": "名称", "period": "年数", "month": "開始月", "age": "開始年齢" },
-                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以降を無視", "detail": "詳細" },
+                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細" },
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
+            "beforeAfter": {"以前": 0, "": 1, "以降": 2},
             "backgroundColor": "rgb(247, 248, 247)",
             "borderColor": "rgb(229, 229, 229)",
             "summaryBackgroundColor": "#DADADA"
@@ -401,10 +402,14 @@ var app = new Vue({
             const data = xlsx.concat(birthday).concat(deathday);
             const settings = this.defaults.displayLimit;
             const colNames = this.defaults.colNames["event"];
+            const bfKeyDict = this.defaults.beforeAfter;
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 const category = String(data[i][colNames["category"]]);
                 const date = this.formatDate(data[i][colNames["date"]]);
                 const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
+                const beforeAfterOriginal = (colNames["beforeAfter"] in data[i]) ? String(data[i][colNames["beforeAfter"]]) : "";
+                const beforeAfter = (beforeAfterOriginal in bfKeyDict) ? beforeAfterOriginal : "";
+                console.log(beforeAfter);
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
                 if (limit in settings) { // 以降を無視が設定されている場合、それ以降のデータを初期化
@@ -430,11 +435,12 @@ var app = new Vue({
                     continue;
                 };
                 // イベントを設定
-                const key = moment(date).format() + String(settings[limit]);
+                const key = moment(date).format() + String(settings[limit]) + String(bfKeyDict[beforeAfter]);
                 if (Object.keys(this.data.event).indexOf(key) == -1) {
                     this.data.event[key] = {
                         "date": date,
                         "limit": limit,
+                        "beforeAfter": beforeAfter,
                         "characters": [],
                         "events": { "all": [], "category": [], "character": [] },
                     };
@@ -519,6 +525,7 @@ var app = new Vue({
                     "displayLimit": vm.defaults.displayLimit[vm.data.event[key].limit],
                     "show": true,
                     "isFirstEvent": true,
+                    "beforeAfter": vm.data.event[key].beforeAfter,
                 };
                 for (const [key, category] of Object.entries(vm.data.settings.category)) {
                     const characters = category.characters;

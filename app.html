@@ -248,6 +248,10 @@
                                                                                     class="font text-center">
                                                                                         {{fillTimeByZero(item.date.getHours())}}:{{fillTimeByZero(item.date.getMinutes())}}
                                                                                     </div>
+                                                                                    <!-- {{item}} -->
+                                                                                    <div v-if="item.beforeAfter != ''" class="text-center">
+                                                                                        {{item.beforeAfter}}
+                                                                                    </div>
                                                                                 </v-col>
                                                                                 <v-col cols="" class="pa-3 d-flex flex-column align-content-center align-center justify-center">
                                                                                     <div class="text-center"
