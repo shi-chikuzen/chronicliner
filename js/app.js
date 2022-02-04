@@ -409,7 +409,6 @@ var app = new Vue({
                 const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
                 const beforeAfterOriginal = (colNames["beforeAfter"] in data[i]) ? String(data[i][colNames["beforeAfter"]]) : "";
                 const beforeAfter = (beforeAfterOriginal in bfKeyDict) ? beforeAfterOriginal : "";
-                console.log(beforeAfter);
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
                 if (limit in settings) { // 以降を無視が設定されている場合、それ以降のデータを初期化
