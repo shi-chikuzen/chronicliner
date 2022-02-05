@@ -14,16 +14,7 @@
 
   + 動作しなくなります
 
-2. Licence
-================================================================
-MITライセンスです。
-
-+ 同人・商用等での利用及び改変、改変物の配布が可能です
-+ 但し、このリソースを使用したことによる責任の一切を負いかねます
-
-Copyright (c) 2022 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
-
-3. FAQ
+2. FAQ
 ============
 Q. 同時刻に発生したイベントの並び順は？
 ++++++++++++++++++++++++++++++++++++++++++++
@@ -78,12 +69,3 @@ Q. 制作経緯は？
 
   + 既存の年表作成ツールを使えばある程度の用は足せますが、調べた範囲のWebサービスではGoogleスプレッドシートを全体公開しなければいけないのがネックでした
   + :strike:`この用途だとあまりデータを外に出したくないのでね`
-
-4. Contact
-==============
-バグ報告、機能リクエスト、その他諸々は
-
-+ `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ のDM・マシュマロ
-+ `Chronicliner Github <https://github.com/shi-chikuzen/chronicliner>`_ のIssues
-
-までお願いします。

@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ========================================
-Welcome to Chronicliner's documentation!
+Chronicliner v2.0.0
 ========================================
 
 .. image:: ./img/top.png
@@ -12,24 +12,50 @@ Welcome to Chronicliner's documentation!
 
 Chroniclinerは、キャラの年齢やら学年やら時系列がわからなくなった限界同人オタク&クリエイターのために作成された年表ツールです。
 
-目次
-===============
+Licence
+================================================================
+MITライセンスです。
+
++ 同人・商用等での利用及び改変、改変物の配布が可能です
++ 但し、このリソースを使用したことによる責任の一切を負いかねます
+
+Copyright (c) 2022 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
+
+Contact
+==============
+バグ報告、機能リクエスト、その他諸々は
+
++ `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ のDM・マシュマロ
++ `Chronicliner Github <https://github.com/shi-chikuzen/chronicliner>`_ のIssues
+
+までお願いします。
+
 .. toctree::
    :maxdepth: 2
-   :caption: INFO:
+   :hidden:
+   :caption: Getting Started:
 
    ./source/info/quickstart
-   ./source/info/files
-   ./source/info/update
+   ./source/info/features
    ./source/info/require
    ./source/info/caution
 
 .. toctree::
    :maxdepth: 2
-   :caption: DATA SETTING:
+   :hidden:
+   :caption: User Guide:
 
+   ./source/usage/ui
    ./source/data/category
    ./source/data/character
    ./source/data/school
    ./source/data/event
 
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: About:
+
+   ./source/info/update
+   ./source/info/files
+   Github <https://github.com/shi-chikuzen/chronicliner>

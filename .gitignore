@@ -2,6 +2,9 @@
 data/mydata
 .DS_Store
 document/
+*.pptx
+*.pdf
+~$*.xlsx
 
 # Created by https://www.toptal.com/developers/gitignore/api/web,vuejs,vue,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=web,vuejs,vue,python
