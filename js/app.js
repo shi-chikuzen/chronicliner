@@ -462,7 +462,7 @@ var app = new Vue({
             let yearSummary = {}
             for (const key of this.eventKeys) {
                 const year = Number(key.slice(0, 4));
-                const date = new Date(year, 0, 1);
+                const date = new Date(year, 11, 31, 23, 59, 59);
                 yearSummary[year] = {
                     "year": year,
                     "date": date,
