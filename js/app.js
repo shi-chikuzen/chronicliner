@@ -467,7 +467,7 @@ var app = new Vue({
                     "year": year,
                     "date": date,
                     "characters": this.data.characters,
-                    "displayLimit": this.defaults.displayLimit["month"],
+                    "displayLimit": this.defaults.displayLimit["second"],
                     "show": false,
                     "isFirstEvent": true,
                 };
@@ -547,7 +547,7 @@ var app = new Vue({
                 const categories = ["all", "category", "character"];
                 for (const categoryName of categories) {
                     if (eventData[categoryName].length > 0) { // イベントが存在する場合処理
-                        let row = jQuery.extend(true, {}, template);
+                        let row = _.cloneDeep(template);
                         eventData[categoryName].forEach(function (event) {
                             row.characters = vm.union(row.characters, event.characters);
                             for (const characterName of event.characters) {
@@ -631,7 +631,7 @@ var app = new Vue({
             const vm = this;
             this.state.ready = false;
             this.state.message = [];
-            this.data = JSON.parse(JSON.stringify(this.defaults.data));
+            this.data = _.cloneDeep(this.defaults.data);
             await this.formatData();
             await Object.keys(this.data.settings.category).forEach(key => {
                 vm.selectAllCharactersInCategory(key);
@@ -646,7 +646,7 @@ var app = new Vue({
             await this.createTimelineColumns();
             await this.updateTimelineData();
             await this.setArrorFirstDied();
-            await this.setBorders();
+            // await this.setBorders();
         },
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
