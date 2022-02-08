@@ -21,6 +21,8 @@ MITライセンスです。
 
 Copyright (c) 2022 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
 
+.. _contact:
+
 Contact
 ==============
 バグ報告、機能リクエスト、その他諸々は
@@ -46,6 +48,7 @@ Contact
    :caption: User Guide:
 
    ./source/usage/ui
+   ./source/usage/autoevent
    ./source/data/category
    ./source/data/character
    ./source/data/school
@@ -58,4 +61,5 @@ Contact
 
    ./source/info/update
    ./source/info/files
+   ./source/info/internal
    Github <https://github.com/shi-chikuzen/chronicliner>

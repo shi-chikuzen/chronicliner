@@ -13,9 +13,9 @@
 
 + 使用ライブラリ
 
-  + `jQuery <https://jquery.com/>`_
   + `Vue.js <https://jp.vuejs.org/>`_
   + `Vuetify.js <https://vuetifyjs.com/ja/>`_
+  + `SheetJS <https://sheetjs.com/>`_
   + `Moment.js <https://momentjs.com/>`_
   + `Lodash <https://lodash.com/>`_
 

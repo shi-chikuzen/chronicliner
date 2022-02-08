@@ -76,13 +76,8 @@ Chroniclinerv2.0.0では、以下の変更を行いました。
 ------------------------------------------------
 内部で使用しているライブラリの大幅な構成変更を行いました。
 
-+ 残留
-
-  + `jQuery <https://jquery.com/>`_
-
-+ 追加
-
-  + `Vue.js <https://jp.vuejs.org/>`_
-  + `Vuetify.js <https://vuetifyjs.com/ja/>`_
-  + `Moment.js <https://momentjs.com/>`_
-  + `Lodash <https://lodash.com/>`_
++ `Vue.js <https://jp.vuejs.org/>`_ ：WebアプリケーションUI構築用JavaScriptライブラリ
++ `Vuetify.js <https://vuetifyjs.com/ja/>`_ ：Vue用マテリアルコンポーネントUIライブラリ
++ `SheetJS <https://sheetjs.com/>`_ ：Excelファイル読み込み用ライブラリ
++ `Moment.js <https://momentjs.com/>`_ ：JavaScriptの標準Date機能を拡張するライブラリ
++ `Lodash <https://lodash.com/>`_ ：便利な関数が使えるようになるライブラリ
