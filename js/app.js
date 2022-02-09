@@ -258,8 +258,19 @@ var app = new Vue({
                 return "mb-4 mt-2";
             };
         },
-        returnTimelineColor(data) { // 矢印列の背景色を返す
-            return (data.age < 0 || data.died == true) ? this.defaults.backgroundColor : data.color;
+        returnTdClass(item, column) {
+            const cellClass = _.cloneDeep(column.cellClass);
+            const colName = column.value;
+            if (this.colsTL.indexOf(colName) == -1) {
+                if (item.isFirstEvent) cellClass.push("timeline-year-border");
+                if (!item.isFirstEvent) cellClass.push("border-none");
+            };
+            return cellClass.join(' ');
+        },
+        returnTimelineColorStyle(item, column) {
+            const data = item[column.value];
+            if (data.age < 0 || data.died == true) return `background-color: ${this.defaults.backgroundColor};`;
+            return `background-color: ${data.color};`;
         },
         // Create Base Data
         createCategory() { // カテゴリ設定を読み込んでフォーマット
@@ -646,7 +657,6 @@ var app = new Vue({
             await this.createTimelineColumns();
             await this.updateTimelineData();
             await this.setArrorFirstDied();
-            // await this.setBorders();
         },
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
@@ -675,27 +685,6 @@ var app = new Vue({
             });
         },
         // Styling
-        setBorders() { // 適切なborderを設定
-            if ("timeline" in this.$refs) {
-                const vm = this;
-                let table = document.querySelector("#timeline");
-                let rows = table.querySelectorAll("tbody > tr");
-                this.zip(this.timelineDataShow, rows).forEach(function ([row, dom], index) {
-                    const borderColor = (row.isFirstEvent) ? vm.defaults.borderColor : "#FFFFFF";
-                    let tds = dom.querySelectorAll("td");
-                    for (let i = 0; i < tds.length; i++){
-                        // 各tdのデフォルトを無効化
-                        tds[i].style.borderBottom = "thin none rgba(0, 0, 0, 0)";
-                        if (i % 2 == 0) { // 年区切りのborderを設定
-                            tds[i].style.borderTop = `thin solid ${borderColor}`;
-                        } else {
-                            const color = tds[i].querySelector(".v-sheet").dataset.color;
-                            tds[i].style.backgroundColor = color;
-                        };
-                    };
-                });
-            };
-        },
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
             const windowHeight = window.innerHeight;
             const sumPadding = 46;

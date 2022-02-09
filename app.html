@@ -157,7 +157,7 @@
                                                             <!-- 年表示列 -->
                                                             <td
                                                             v-if="column.value == 'year'"
-                                                            :class="column.cellClass.join(' ')">
+                                                            :class="returnTdClass(item, column)">
                                                                 <span v-show="item.isFirstEvent">
                                                                     <div class="d-flex flex-column align-content-center justify-center align-center">
                                                                         <div class="text-center font" style="font-size: 1.1em;">{{item.year}}</div>
@@ -180,17 +180,16 @@
                                                             <!-- タイムライン列 -->
                                                             <td
                                                             v-else-if="colsTL.indexOf(column.value) != -1"
-                                                            :class="column.cellClass.join(' ')">
+                                                            :class="returnTdClass(item, column)"
+                                                            :style="returnTimelineColorStyle(item, column)">
                                                                 <v-tooltip right
                                                                 :color="(item[column.value].age >= 0 && item[column.value].summary == false) ? '' : 'rgba(0,0,0,0)'">
                                                                     <template v-slot:activator="{ on, attrs }">
                                                                         <v-sheet
-                                                                        height="100%"
                                                                         width="100%"
                                                                         v-bind="attrs"
                                                                         v-on="on"
-                                                                        :color="returnTimelineColor(item[column.value])"
-                                                                        :data-color="returnTimelineColor(item[column.value])"
+                                                                        color="rgba(0,0,0,0)"
                                                                         >
                                                                             <svg v-if="item[column.value].firstAfterDied" class="arrow-svg svgFill" :data-color="
                                                                             item[column.value].color" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.27 28.73"><defs><style>.cls-1{fill:#f7f9f7;}.cls-2{fill:none;stroke:#fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:4px;}</style></defs><g id="レイヤー_2" data-name="レイヤー 2"><g id="レイヤー_1-2" data-name="レイヤー 1"><polygon class="cls-1" points="26.49 26.73 1.72 0 51.27 0 26.49 26.73"/><line class="cls-2" x1="26.63" y1="26.73" x2="51.27" y2="2.09"/><line class="cls-2" x1="2" y1="2.09" x2="26.63" y2="26.73"/></g></g></svg>
@@ -223,7 +222,7 @@
                                                             <!-- イベントカード列 -->
                                                             <td
                                                             v-else-if="colsEV.indexOf(column.value) != -1"
-                                                            :class="column.cellClass.join(' ')">
+                                                            :class="returnTdClass(item, column)">
                                                                 <v-row class="pa-0">
                                                                     <v-col cols="12">
                                                                         <v-card
@@ -276,120 +275,6 @@
                                                             </td>
                                                         </template>
                                                     </tr>
-                                                </template>
-                                                <!-- 年齢列 -->
-                                                <template v-slot:item.year="{ item }">
-                                                    <span v-show="item.isFirstEvent">
-                                                        <div class="d-flex flex-column align-content-center justify-center align-center">
-                                                            <div class="text-center font" style="font-size: 1.1em;">{{item.year}}</div>
-                                                            <v-btn
-                                                            class="ma-0"
-                                                            text
-                                                            icon
-                                                            color="primary"
-                                                            @click="toggleYearSummaryShow(item.year); update();">
-                                                                <v-icon v-if="yearSummary[item.year].show" class="size">
-                                                                    mdi-plus
-                                                                </v-icon>
-                                                                <v-icon v-else class="size">
-                                                                    mdi-minus
-                                                                </v-icon>
-                                                            </v-btn>
-                                                        </div>
-                                                    </span>
-                                                </template>
-                                                <!-- 矢印列 -->
-                                                <template v-for="tlkey in colsTL" v-slot:[`item.${tlkey}`]="{ item }">
-                                                    <v-tooltip right
-                                                    :color="(item[tlkey].age >= 0 && item[tlkey].summary == false) ? '' : 'rgba(0,0,0,0)'">
-                                                        <template v-slot:activator="{ on, attrs }">
-                                                            <v-sheet
-                                                            height="100%"
-                                                            width="100%"
-                                                            :color="returnTimelineColor(item[tlkey])"
-                                                            :data-color="returnTimelineColor(item[tlkey])"
-                                                            v-bind="attrs"
-                                                            v-on="on">
-                                                                <svg v-if="item[tlkey].firstAfterDied" class="arrow-svg svgFill" :data-color="
-                                                                item[tlkey].color" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.27 28.73"><defs><style>.cls-1{fill:#f7f9f7;}.cls-2{fill:none;stroke:#fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:4px;}</style></defs><g id="レイヤー_2" data-name="レイヤー 2"><g id="レイヤー_1-2" data-name="レイヤー 1"><polygon class="cls-1" points="26.49 26.73 1.72 0 51.27 0 26.49 26.73"/><line class="cls-2" x1="26.63" y1="26.73" x2="51.27" y2="2.09"/><line class="cls-2" x1="2" y1="2.09" x2="26.63" y2="26.73"/></g></g></svg>
-                                                                <img v-else-if="item[tlkey].age > 0" v-show="item[tlkey].needsArrow" src="./svg/nofill.svg" alt="" class="arrow-svg">
-                                                                <img v-else v-show="item[tlkey].needsArrow" src="./svg/fill.svg" alt="" class="arrow-svg">
-                                                            </v-sheet>
-                                                        </template>
-                                                        <span>
-                                                            <v-row v-show="item[tlkey].age >= 0 && item[tlkey].summary == false">
-                                                                <v-col cols="3" class="d-flex align-center">
-                                                                    <v-icon
-                                                                    dark
-                                                                    left>
-                                                                        mdi-information
-                                                                    </v-icon>
-                                                                </v-col>
-                                                                <v-col cols="9">
-                                                                    {{item[tlkey].name}}
-                                                                    <template>
-                                                                        <br>年齢:&nbsp;{{item[tlkey].age}}<br>
-                                                                    </template>
-                                                                    <template v-if="'name' in item[tlkey].school">
-                                                                        {{item[tlkey].school.name}}:&nbsp;{{item[tlkey].school.grade}}年
-                                                                    </template>
-                                                                </v-col>
-                                                            </v-row>
-                                                        </span>
-                                                    </v-tooltip>
-                                                </template>
-                                                <!-- データカード列 -->
-                                                <template v-for="evkey in colsEV" v-slot:[`item.${evkey}`]="{ item }">
-                                                    <v-row class="pa-0">
-                                                        <v-col cols="12">
-                                                            <v-card
-                                                            v-for="(event, index) in item[evkey]"
-                                                            :color="returnCardColor(event.category)"
-                                                            :class="returnCardClass(index, item[evkey])"
-                                                            outlined>
-                                                                <v-tooltip bottom
-                                                                :color="(event.detail === '') ? 'rgba(0, 0, 0, 0)' : ''">
-                                                                    <template v-slot:activator="{ on, attrs }">
-                                                                        <v-card-text
-                                                                        v-bind:class="returnCardTextClass(event.category)"
-                                                                        class="pa-2"
-                                                                        v-bind="attrs"
-                                                                        v-on="on">
-                                                                            <v-row>
-                                                                                <v-col cols="4" v-if="item.displayLimit > 0 && event.category != 'summary'" class="font d-flex flex-column align-content-center align-center justify-center pr-0">
-                                                                                    <div
-                                                                                    style="font-size: 1.4rem;"
-                                                                                    class="font text-center">
-                                                                                        {{item.date.getMonth() + 1}}
-                                                                                    </div>
-                                                                                    <div
-                                                                                    v-if="item.displayLimit > 1"
-                                                                                    class="font text-center pt-1">
-                                                                                        {{item.date.getDate()}}TH
-                                                                                    </div>
-                                                                                    <div
-                                                                                    v-if="item.displayLimit > 2"
-                                                                                    class="font text-center">
-                                                                                        {{fillTimeByZero(item.date.getHours())}}:{{fillTimeByZero(item.date.getMinutes())}}
-                                                                                    </div>
-                                                                                    <!-- {{item}} -->
-                                                                                    <div v-if="item.beforeAfter != ''" class="text-center">
-                                                                                        {{item.beforeAfter}}
-                                                                                    </div>
-                                                                                </v-col>
-                                                                                <v-col cols="" class="pa-3 d-flex flex-column align-content-center align-center justify-center">
-                                                                                    <div class="text-center"
-                                                                                    v-text="event.title" style="white-space: pre-line;">
-                                                                                    </div>
-                                                                                </v-col>
-                                                                            </v-row>
-                                                                        </v-card-text>
-                                                                    </template>
-                                                                    <span v-if="event.detail != ''" v-text="event.detail" style="white-space: pre-line;"></span>
-                                                                </v-tooltip>
-                                                            </v-card>
-                                                        </v-col>
-                                                    </v-row>
                                                 </template>
                                             </v-data-table>
                                         </v-expand-transition>
