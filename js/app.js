@@ -19,7 +19,7 @@ var app = new Vue({
     data: {
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, "message": [], "errorSnack": false },
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false },
         defaults: {
             "color": ["#47cacc", "#63bcc9", "#cdb3d4", "#e7b7c8", "#ffbe88"],
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント" },
@@ -59,7 +59,7 @@ var app = new Vue({
             let currentYear = -1;
             for (const row of this.timelineData) {
                 const summarize = this.yearSummary[row.year].show;
-                if ((currentYear != row.year) && (summarize == true)) {
+                if ((currentYear != row.year) && (summarize == true) && this.intersection(this.yearSummary[row.year].characters, this.characterSelected).length > 0) {
                     data.push(this.yearSummary[row.year]);
                 } else if (summarize == true) {
                     // rowをskipする
@@ -477,10 +477,12 @@ var app = new Vue({
                 yearSummary[year] = {
                     "year": year,
                     "date": date,
-                    "characters": this.data.characters,
+                    "characters": [],
                     "displayLimit": this.defaults.displayLimit["second"],
                     "show": false,
                     "isFirstEvent": true,
+                    "summary": false,
+                    "height": "0px",
                 };
                 for (characterName of this.data.characters) {
                     const character = this.data.settings.character[characterName];
@@ -536,6 +538,8 @@ var app = new Vue({
                     "show": true,
                     "isFirstEvent": true,
                     "beforeAfter": vm.data.event[key].beforeAfter,
+                    "height": "0px",
+                    "summary": false,
                 };
                 for (const [key, category] of Object.entries(vm.data.settings.category)) {
                     const characters = category.characters;
@@ -566,6 +570,7 @@ var app = new Vue({
                                 vm.yearSummary[year][`${characterName}_ev`][0]["numEvents"][categoryName] += 1;
                             };
                         });
+                        vm.yearSummary[year].characters = vm.union(row.characters, vm.yearSummary[year].characters);
                         data.push(row);
                     };
                 };
@@ -597,6 +602,10 @@ var app = new Vue({
             let currentYear = -1;
             for (let index = 0; index < this.timelineData.length; index++) {
                 const row = this.timelineData[index];
+                if (row) {
+                    
+                }
+                row.height = "0px";
                 // 列がshow状態かどうかを判断
                 if (this.intersection(this.characterSelected, row.characters).length > 0) {
                     row.show = true;
@@ -640,6 +649,7 @@ var app = new Vue({
         // Functions
         async init() { // 初期化処理
             const vm = this;
+            this.state.domUpdated = false;
             this.state.ready = false;
             this.state.message = [];
             this.data = _.cloneDeep(this.defaults.data);
@@ -652,11 +662,17 @@ var app = new Vue({
             await this.updateTimelineData();
             this.state.loading = false;
             this.state.ready = true;
+            this.$nextTick(function () {
+                this.state.domUpdated = true;
+            });
         },
         async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う
             await this.createTimelineColumns();
             await this.updateTimelineData();
             await this.setArrorFirstDied();
+            this.$nextTick(function () { // DOM更新後に処理
+                this.setInnerTdHeight();
+            });
         },
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
@@ -697,6 +713,15 @@ var app = new Vue({
                 const g = arrow.querySelectorAll('g');
                 g.forEach(function (element) {
                     element.setAttribute('fill', arrow.dataset.color);
+                });
+            };
+        },
+        setInnerTdHeight() { // 親の高さに合わせてTd内部のheightを変更する
+            if ("timeline" in this.$refs) {
+                const vm = this;
+                const trs = document.querySelectorAll(".timeline-tr");
+                trs.forEach(function (tr, index) {
+                    vm.timelineDataShow[index].height = String(tr.clientHeight) + "px";
                 });
             };
         },

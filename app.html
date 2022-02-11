@@ -152,7 +152,7 @@
                                                     </thead>
                                                 </template>
                                                 <template v-slot:body="{items}">
-                                                    <tr v-for="item in items">
+                                                    <tr v-for="item in items" class="timeline-tr" v-show="item.show">
                                                         <template v-for="column in timelineHeaders">
                                                             <!-- 年表示列 -->
                                                             <td
@@ -187,6 +187,7 @@
                                                                     <template v-slot:activator="{ on, attrs }">
                                                                         <v-sheet
                                                                         width="100%"
+                                                                        :height="item.height"
                                                                         v-bind="attrs"
                                                                         v-on="on"
                                                                         color="rgba(0,0,0,0)"
