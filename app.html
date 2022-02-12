@@ -125,7 +125,7 @@
                                             id="timeline"
                                             ref="timeline"
                                             :headers="timelineHeaders"
-                                            :items="timelineDataShow"
+                                            :items="timelineData"
                                             disable-sort="true"
                                             class="elevation-0 overflow-y-auto"
                                             v-show="this.state.ready"
@@ -167,7 +167,7 @@
                                                                         icon
                                                                         color="primary"
                                                                         @click="toggleYearSummaryShow(item.year); update();">
-                                                                            <v-icon v-if="yearSummary[item.year].show" class="size">
+                                                                            <v-icon v-if="yearSummary[item.year].summarize" class="size">
                                                                                 mdi-plus
                                                                             </v-icon>
                                                                             <v-icon v-else class="size">

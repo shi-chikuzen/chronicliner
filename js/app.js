@@ -2,6 +2,8 @@
 
 Vue.use(Vuetify);
 
+Vue.config.devtools = true;
+
 const vuetify = new Vuetify({
     theme: {
         themes: {
@@ -42,7 +44,6 @@ var app = new Vue({
         timelineData: [],
         yearSummary: {},
         tableHeight: 0,
-        windowTimer: 0,
     },
     computed: {
         snackMessage: function () {
@@ -53,22 +54,6 @@ var app = new Vue({
         },
         colsEV: function () {
             return this.data.characters.map(name => name + "_ev");
-        },
-        timelineDataShow: function () {
-            let data = [];
-            let currentYear = -1;
-            for (const row of this.timelineData) {
-                const summarize = this.yearSummary[row.year].show;
-                if ((currentYear != row.year) && (summarize == true) && this.intersection(this.yearSummary[row.year].characters, this.characterSelected).length > 0) {
-                    data.push(this.yearSummary[row.year]);
-                } else if (summarize == true) {
-                    // rowをskipする
-                } else {
-                    data.push(row);
-                };
-                currentYear = row.year;
-            };
-            return data;
         },
     },
     mounted: function () {
@@ -481,8 +466,9 @@ var app = new Vue({
                     "displayLimit": this.defaults.displayLimit["second"],
                     "show": false,
                     "isFirstEvent": true,
-                    "summary": false,
+                    "summary": true,
                     "height": "0px",
+                    "summarize": false,
                 };
                 for (characterName of this.data.characters) {
                     const character = this.data.settings.character[characterName];
@@ -525,10 +511,15 @@ var app = new Vue({
         createTimelineData() { // タイムラインデータを作成
             const vm = this;
             let data = [];
+            let currentYear = this.data.event[this.eventKeys[0]].date.getFullYear();
             this.eventKeys.forEach(function (key) {
                 const date = vm.data.event[key].date;
                 const year = date.getFullYear();
                 const eventData = vm.data.event[key].events;
+                if (currentYear != year) {
+                    data.push(vm.yearSummary[currentYear]);
+                    currentYear = year;
+                };
                 // Template
                 let template = {
                     "year": date.getFullYear(),
@@ -538,8 +529,8 @@ var app = new Vue({
                     "show": true,
                     "isFirstEvent": true,
                     "beforeAfter": vm.data.event[key].beforeAfter,
-                    "height": "0px",
                     "summary": false,
+                    "height": "0px",
                 };
                 for (const [key, category] of Object.entries(vm.data.settings.category)) {
                     const characters = category.characters;
@@ -575,6 +566,8 @@ var app = new Vue({
                     };
                 };
             });
+            // 最後のイベントのYearからSummaryをpush
+            data.push(this.yearSummary[data.slice(-1)[0].year]);
             this.timelineData = data;
         },
         createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
@@ -602,12 +595,9 @@ var app = new Vue({
             let currentYear = -1;
             for (let index = 0; index < this.timelineData.length; index++) {
                 const row = this.timelineData[index];
-                if (row) {
-                    
-                }
                 row.height = "0px";
                 // 列がshow状態かどうかを判断
-                if (this.intersection(this.characterSelected, row.characters).length > 0) {
+                if ((this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize)) {
                     row.show = true;
                     // Year列の表示状態変更
                     if (currentYear != row.year) {
@@ -678,7 +668,7 @@ var app = new Vue({
             await this.setTableHeight();
         }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
-            this.yearSummary[year].show = !this.yearSummary[year].show;
+            this.yearSummary[year].summarize = !this.yearSummary[year].summarize;
         },
         // Filter
         selectAllCharactersInCategory(category) { // categoryに所属するキャラクタのチェックボックスにチェックを入れる
@@ -717,13 +707,11 @@ var app = new Vue({
             };
         },
         setInnerTdHeight() { // 親の高さに合わせてTd内部のheightを変更する
-            if ("timeline" in this.$refs) {
-                const vm = this;
-                const trs = document.querySelectorAll(".timeline-tr");
-                trs.forEach(function (tr, index) {
-                    vm.timelineDataShow[index].height = String(tr.clientHeight) + "px";
-                });
-            };
+            const vm = this;
+            const trs = document.querySelectorAll(".timeline-tr");
+            trs.forEach(function (tr, index) {
+                vm.timelineData[index].height = String(tr.clientHeight) + "px";
+            });
         },
     },
 });
