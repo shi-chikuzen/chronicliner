@@ -215,6 +215,9 @@
                                                                                 <template v-if="'name' in item[column.value].school">
                                                                                     {{item[column.value].school.name}}:&nbsp;{{item[column.value].school.grade}}年
                                                                                 </template>
+                                                                                <template v-for="pEv in item[column.value].periodEvents">
+                                                                                    <br>{{pEv.title}}:&nbsp;{{getPeriodEventDiff(pEv, item.date)}}
+                                                                                </template>
                                                                             </v-col>
                                                                         </v-row>
                                                                     </span>

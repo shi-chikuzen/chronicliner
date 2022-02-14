@@ -24,20 +24,22 @@ var app = new Vue({
         state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false },
         defaults: {
             "color": ["#47cacc", "#63bcc9", "#cdb3d4", "#e7b7c8", "#ffbe88"],
-            "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント" },
+            "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント", "periodEvent": "期間イベント" },
             "colNames": {
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
-                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "schoolName": "教育課程名", "schoolOffset": "開始年齢調整", "autoBirth": "誕生年自動計算", "autoYear": "起算年", "autoSchool": "起算課程", "autoGrade": "起算学年" },
-                "school": { "name": "名称", "period": "年数", "month": "開始月", "age": "開始年齢" },
+                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算" },
+                "school": { "characterName": "キャラクタ名", "name": "教育課程名", "period": "基準所属年数", "startDate": "起算日", "age": "開始年齢", "enterGrade": "編入学年", "enterDate": "編入日", "autoBirth": "誕生年自動計算に使用", "autoYear": "誕生年起算年", "autoGrade": "誕生年起算学年" },
                 "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細" },
+                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細" },
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
-            "beforeAfter": {"以前": 0, "": 1, "以降": 2},
+            "displayTime": { "year": "年", "month": "ヶ月", "day": "日", "hour": "時間", "minute": "分", "second": "秒" },
+            "beforeAfter": { "以前": 0, "": 1, "期間": 1, "以降": 2 },
             "backgroundColor": "rgb(247, 248, 247)",
             "borderColor": "rgb(229, 229, 229)",
             "summaryBackgroundColor": "#DADADA"
         },
-        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "characters": [] },
+        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [] },
         characterSelected: [],
         eventKeys: [],
         timelineHeaders: [],
@@ -116,14 +118,29 @@ var app = new Vue({
         isWithin(target, start, end) { // targetがstart以上end以下かを返す
             return (target >= start) && (target <= end);
         },
-        formatDate(input) {
+        isinSchoolPeriod(target, start, end) { // targetがstart<target<=endかを返す
+            return (target > start) && (target <= end);
+        },
+        formatDate(input) { // 日付っぽいものをDate形式に変換する
             if (typeof (input) == "object") {
                 return input;
             } else if (typeof (input) == "string") {
+                const splitted = input.split("/");
+                if (splitted.length == 2) return new Date(1900, Number(splitted[0]) - 1, Number(splitted[1]));
                 return new Date(Date.parse(input));
             } else {
                 return this.convertSerial2Date(input);
             };
+        },
+        resetDateFromLimit(date, limit) {
+            const settings = this.defaults.displayLimit;
+            if (limit in settings) {
+                if (settings[limit] <= 0) date.setMonth(0);
+                if (settings[limit] <= 1) date.setDate(1);
+                if (settings[limit] <= 2) date.setHours(0);
+                if (settings[limit] <= 3) date.setMinutes(0);
+            };
+            return date;
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -160,48 +177,34 @@ var app = new Vue({
             return valid;
         },
         // Get Info
-        getBirth(data) { // 誕生年を計算してDate形式で返す
-            const colNames = this.defaults.colNames["character"];
-            let birthday = this.convertSerial2Date(data[colNames["birthday"]]);
-            const schoolName = data[colNames["schoolName"]]
-            const autoYear = data[colNames["autoYear"]];
-            const autoSchool = data[colNames["autoSchool"]];
-            const autoGrade = data[colNames["autoGrade"]];
-            if (!(autoSchool in this.data.settings.school)) { // 指定された学校が存在しない
-                this.state.message.push(`キャラクター「${data[colNames["name"]]}」に指定された起算課程「${autoSchool}」の設定が存在しません`);
-            } else if (schoolName.split("_").indexOf(autoSchool) == -1) { // 指定された学校に在籍する設定になっていない
-                this.state.message.push(`キャラクター「${row[colNames["name"]]}」に指定された起算課程「${autoSchool}」は該当キャラクターの教育課程に設定されていません`);
-            } else { // 学校設定に合わせて誕生日を計算
-                const schoolData = this.data.settings.school[autoSchool];
-                const month = schoolData["month"];
-                const age = schoolData["age"];
-                const period = schoolData["period"];
-                if (autoGrade > period) {
-                    this.state.message.push(`キャラクター「${data[colNames["name"]]}」に指定された起算年数が、起算課程「${autoSchool}」の期間設定を超過しています`);
-                } else {
-                    // 指定教育課程の1年目の期間を設定
-                    const startDate = new Date(autoYear - autoGrade + 1, month - 1, 1);
-                    const endDate = new Date(autoYear - autoGrade + 2, month - 1, 1);
-                    // birthdayを指定教育課程1年目の期間内になるように設定
-                    birthday.setFullYear(startDate.getFullYear());
-                    if (!this.isBetween(birthday, startDate, endDate)) {
-                        birthday.setFullYear(birthday.getFullYear() + 1);
-                    };
-                    // 指定教育課程の開始年齢を減算
-                    birthday.setFullYear(birthday.getFullYear() - age);
-                };
+        getBirth(character, school) { // 誕生年を計算してDate形式で返す
+            let birthday = character.birthday;
+            const startDate = school.startDate;
+            const age = school.age;
+            const autoYear = school.autoYear;
+            const autoGrade = school.autoGrade;
+            // 1年目の期間を設定
+            const firstYearStart = new Date(autoYear - autoGrade + 1, startDate.getMonth(), startDate.getDate());
+            const firstYearEnd = new Date(autoYear - autoGrade + 2, startDate.getMonth(), startDate.getDate());
+            // birthdayを指定教育課程1年目の期間内になるように設定
+            birthday.setFullYear(firstYearStart.getFullYear());
+            if (!this.isinSchoolPeriod(birthday, firstYearStart, firstYearEnd)) {
+                birthday.setFullYear(birthday.getFullYear() + 1);
             };
+            // 指定教育課程の開始年齢を減算
+            birthday.setFullYear(birthday.getFullYear() - age);
+            // 結果を返却
             return birthday;
         },
         getCharacterSchoolInfo(name, date) { // 指定キャラクターの該当Dateの教育課程情報を返す
             const character = this.data.settings.character[name];
             if (!(character.school === null)) {
-                const schools = character.school.details;
+                const schools = character.school;
                 for (let index = 0; index < schools.length; index++) {
                     const school = schools[index];
-                    if (this.isBetween(date, school.start, school.end)) {
-                        const grade = Math.floor((date.getTime() - school.start.getTime()) / (365*24*60*60*1000)) + 1;
-                        return {"name": school.name, "grade": grade};
+                    if (this.isBetween(date, school.enter, school.end)) {
+                        const grade = Math.floor((date.getTime() - school.start.getTime()) / (365 * 24 * 60 * 60 * 1000)) + 1;
+                        return { "name": school.name, "grade": grade };
                     };
                 };
             };
@@ -210,6 +213,16 @@ var app = new Vue({
         getYearPassed(start, end) { // 経過年数（切り捨て）を返す
             const years = Math.floor((end.getTime() - start.getTime()) / (365 * 24 * 60 * 60 * 1000));
             return years;
+        },
+        getCharacterPeriodEvents(name, date) { // 指定キャラクターの該当DateのperiodEventを返す
+            const events = this.data.periodEvent.events[name];
+            return events.filter(event => this.isWithin(date, event.startDate, event.endDate));
+        },
+        getPeriodEventDiff(periodEvent, date) { // periodEventのstartからの経過時間を返す
+            const fromDate = moment(periodEvent.startDate);
+            const toDate = moment(date);
+            const diff = Math.round(toDate.diff(fromDate, `${periodEvent.display}s`, true), 2);
+            return String(diff) + this.defaults.displayTime[periodEvent.display] + "目";
         },
         isCharacterSelected(character) { // 該当キャラクターが選択されているかを返す
             return this.characterSelected.indexOf(character) != -1;
@@ -269,18 +282,6 @@ var app = new Vue({
                 this.data.settings.category[String(data[i][colNames["name"]])] = row;
             };
         },
-        createSchool() { // 教育課程設定を読み込んでフォーマット
-            const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["school"]], { header: 0 });
-            const colNames = this.defaults.colNames["school"];
-            for (let i = 0; i < data.length; i++) { // 各データを処理
-                let row = {
-                    "period": Number(data[i][colNames["period"]]),
-                    "month": Number(data[i][colNames["month"]]),
-                    "age": Number(data[i][colNames["age"]]),
-                };
-                this.data.settings.school[String(data[i][colNames["name"]])] = row;
-            };
-        },
         createCharacter() { // キャラクタ設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["character"]], { header: 0 });
             const colNames = this.defaults.colNames["character"];
@@ -293,74 +294,112 @@ var app = new Vue({
                 const characterName = String(row[colNames["name"]]);
                 let result = {
                     "category": String(row[colNames["category"]]),
-                    "birthday": !(row[colNames["autoBirth"]]) ? this.convertSerial2Date(row[colNames["birthday"]]) : this.getBirth(row),
-                    "death": (colNames["death"] in row) ? this.convertSerial2Date(row[colNames["death"]]) : null,
+                    "birthday": this.resetDateFromLimit(this.formatDate(row[colNames["birthday"]]), "hour"),
+                    "death": (colNames["death"] in row) ? this.resetDateFromLimit(this.formatDate(row[colNames["death"]]), "hour") : null,
+                    "birthdayDetail": (colNames["birthdayDetail"] in row) ? String(row[colNames["birthdayDetail"]]) : "",
+                    "deathdayDetail": (colNames["deathdayDetail"] in row) ? String(row[colNames["deathdayDetail"]]) : "",
+                    "autoBirth": (colNames["autoBirth"] in row) ? row[colNames["autoBirth"]] : false,
                     "school": null,
-                    "schoolName": (colNames["schoolName"] in row)? String(row[colNames["schoolName"]]).split("_") : [],
-                    "schoolOffset": (colNames["schoolOffset"] in row)? String(row[colNames["schoolOffset"]]).split("_") : 0,
                 };
                 this.data.characters.push(characterName);
                 this.data.settings.character[characterName] = result;
+                this.data.periodEvent.events[characterName] = [];
                 this.data.settings.category[result.category].characters.push(characterName);
             };
         },
-        createCharacterSchoolInfo() { // キャラクタ設定から教育課程データを作成
-            for (let name in this.data.settings.character) {
-                const data = this.data.settings.character[name];
-                let result = { "period": {"start": data.birthday, "end": data.birthday}, "details": [] };
-                if (data["schoolName"].length != 0) { // 教育課程設定が存在する
-                    if (!isNaN(Number(data["schoolOffset"]))) {
-                        // 1桁の数字でオフセットが指定されている場合、1桁数字の繰り返し配列に変換
-                        data["schoolOffset"] = Array(data["schoolName"].length).fill(Number(data["schoolOffset"]));
-                    } else { // 配列の場合、各要素を数値に変換
-                        data["schoolOffset"].forEach(function (elem, index) {
-                            data["schoolOffset"][index] = (Number(elem) !== NaN) ? Number(elem) : 0;
-                        });
+        createCharacterSchoolInfo() { // 教育課程設定を作成
+            const vm = this;
+            const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["school"]], { header: 0 });
+            const colNames = this.defaults.colNames["school"];
+            const colsMust = [colNames.characterName, colNames.name, colNames.period, colNames.startDate, colNames.age];
+            // 各キャラクタごとに処理
+            for (const characterName in this.data.settings.character) {
+                const character = this.data.settings.character[characterName];
+                const schoolData = data.filter(d => d[colNames.characterName] == characterName);
+                // 各データを読んで存在しない設定を作成
+                let valid = true;
+                let autoBirthCount = 0;
+                let autoBirthIndex = 0;
+                schoolData.map(function (d, index) { // データフォーマット
+                    if (vm.intersection(Object.keys(d), colsMust).length != colsMust.length) { // 必要な設定が行われていない場合
+                        valid = false;
+                    } else { // 任意設定項目及びデータをフォーマット
+                        d.characterName = String(d[colNames["characterName"]]);
+                        d.name = String(d[colNames["name"]]);
+                        d.period = Number(d[colNames["period"]]);
+                        d.startDate = vm.formatDate(d[colNames["startDate"]]);
+                        d.startDate.setFullYear(1900);
+                        d.age = Number(d[colNames["age"]]);
+                        d.enterGrade = (colNames["enterGrade"] in d) ? Number(d[colNames["enterGrade"]]) : 1;
+                        d.enterDate = (colNames["enterDate"] in d) ? vm.formatDate(d[colNames["enterDate"]]) : d[colNames["startDate"]];
+                        d.autoBirth = (colNames["autoBirth"] in d) ? d[colNames["autoBirth"]] : false;
+                        d.autoYear = (colNames["autoYear"] in d) ? Number(d[colNames["autoYear"]]) : 1900;
+                        d.autoGrade = (colNames["autoGrade"] in d) ? Number(d[colNames["autoGrade"]]) : 1;
+                        if (d.autoBirth) {
+                            autoBirthIndex = index;
+                            autoBirthCount++;
+                        };
+                        if (d.period < d.enterGrade) {
+                            vm.state.message.push(`キャラクター「${characterName}」の教育課程「${d.name}の編入学年が所属年数を超過しています」`);
+                            valid = false;
+                        };
                     };
-                    if (data["schoolName"].length != data["schoolOffset"].length) { // 教育課程数と開始年齢調整数が噛み合っていない
-                        this.state.message.push(`キャラクター「${name}」に設定された教育課程と開始年齢調整の項目数に整合性がありません`);
-                        continue;
-                    } else {
-                        // 教育課程とインターバルに基づきデータを作成
-                        const vm = this;
-                        const schoolData = this.data.settings.school;
-                        this.zip(data["schoolName"], data["schoolOffset"]).forEach(function ([schoolName, offset], index) {
-                            const school = schoolData[schoolName];
-                            // 入学後最初の誕生日を算出
-                            let firstBirthday = new Date(data["birthday"].getTime());
-                            firstBirthday.setFullYear(firstBirthday.getFullYear() + school.age + offset);;
-                            // 入学1年目期間を仮置き
-                            let startDate = new Date(firstBirthday.getFullYear(), school.month - 1, 1);
-                            let endDate = new Date(firstBirthday.getFullYear() + 1, school.month - 1, 1);
-                            // 期間内に収まっていない場合、期間を1年前倒し
-                            if (!(vm.isBetween(firstBirthday, startDate, endDate))) {
-                                startDate.setFullYear(startDate.getFullYear() - 1);
-                                endDate.setFullYear(endDate.getFullYear() - 1);
-                            };
-                            // 所属期間を設定
-                            endDate.setFullYear(endDate.getFullYear() + school.period - 1);
-                            result.period.start = ((result.period.start < startDate) && (result.period.start != data["birthday"])) ? result.period.start : startDate;
-                            result.period.end = (result.period.end > endDate) ? result.period.end : endDate;
-                            // 詳細を設定
-                            result.details.push({
-                                "name": schoolName,
-                                "start": startDate,
-                                "end": endDate,
-                            });
-                            // 所属期間が前の教育課程に食い込んでいた場合、前の教育課程の期間を繰り上げる
-                            if (index > 0) {
-                                if (result.details[index - 1].start > startDate) { // 前の教育課程が始まるより前に処理中の教育課程が開始されている
-                                    vm.state.message.push(`キャラクター「${name}」の教育課程開始年齢調整が正しく設定されていません`);
-                                } else if (result.details[index - 1].end > startDate) {
-                                    result.details[index - 1].end = startDate;
-                                };
-                            };
-                        });
-                    };
-                } else {
+                });
+                if (autoBirthCount != character.autoBirth) { // 自動計算の設定が噛み合っていない
+                    this.state.message.push(`キャラクター「${characterName}」の誕生年自動計算設定に問題があります`);
                     continue;
+                } else if (!valid) { // データが足りない
+                    this.state.message.push(`キャラクター「${characterName}」の教育課程設定で必要な設定が行われていません`);
+                    continue;
+                } else { // データを処理
+                    // 誕生年自動設定が存在する場合、先に自動設定を行う
+                    if (character.autoBirth) character.birthday = this.getBirth(character, schoolData[autoBirthIndex]);
+                    // 教育課程データを作成
+                    let school = [];
+                    schoolData.forEach(function (d) {
+                        let row = {"name": d.name};
+                        // 入学後最初の誕生日を仮置きする
+                        let firstBirthday = new Date(character.birthday.getTime());
+                        firstBirthday.setFullYear(firstBirthday.getFullYear() + d.age);
+                        // 入学1年目期間を仮置き
+                        let firstYearStart = new Date(d.startDate.getTime());
+                        firstYearStart.setFullYear(firstBirthday.getFullYear());
+                        let firstYearEnd = new Date(d.startDate.getTime());
+                        firstYearEnd.setFullYear(firstBirthday.getFullYear() + 1);
+                        // 期間内に収まっていない場合、期間を1年前倒し
+                        if (!(vm.isinSchoolPeriod(firstBirthday, firstYearStart, firstYearEnd))) {
+                            firstYearStart.setFullYear(firstYearStart.getFullYear() - 1);
+                            firstYearEnd.setFullYear(firstYearEnd.getFullYear() - 1);
+                        };
+                        // 学年起算開始時点と卒業時点を設定
+                        row.start = firstYearStart;
+                        row.end = new Date(firstYearStart.getTime());
+                        row.end.setFullYear(row.end.getFullYear() + d.period);
+                        // 所属開始日時を設定
+                        row.enter = new Date(d.enterDate.getTime());
+                        row.enter.setFullYear(row.start.getFullYear() + d.enterGrade - 1);
+                        let enterYearStart = new Date(row.start.getTime());
+                        enterYearStart.setFullYear(enterYearStart.getFullYear() + d.enterGrade - 1);
+                        let enterYearEnd = new Date(enterYearStart.getTime());
+                        enterYearEnd.setFullYear(enterYearEnd.getFullYear() + 1);
+                        // 期間内に収まっていない場合、期間を1年後ろ倒し
+                        if (!vm.isBetween(row.enter, enterYearStart, enterYearEnd)) {
+                            row.enter.setFullYear(row.enter.getFullYear() + 1);
+                        };
+                        // データを追加
+                        school.push(row);
+                    });
+                    // 教育課程データを処理順に並び替え
+                    school.sort((a, b) => a.enter - b.enter);
+                    let currentEnd = new Date(1900, 0, 1);
+                    school.forEach(function (elem, index) { // 転入期間が食い込んでいる場合は前のendを書き換え
+                        if ((index != 0) && (elem.enter < currentEnd)) {
+                            school[index - 1].end = elem.enter;
+                        };
+                        currentEnd = elem.end;
+                    });
+                    character.school = school;
                 };
-                this.data.settings.character[name].school = result;
             };
         },
         createCharacterBirthday() { // キャラクタ設定から誕生日イベントを生成
@@ -391,28 +430,74 @@ var app = new Vue({
             };
             return rows;
         },
+        createPeriodEvent() { // 期間イベントを作成
+            const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["periodEvent"]], { header: 0 });
+            const colNames = this.defaults.colNames["periodEvent"];
+            const eventColNames = this.defaults.colNames["event"];
+            for (const row of data) {
+                let res = {};
+                const category = String(row[colNames["category"]]);
+                if (category == "all") {
+                    res.characters = this.data.characters;
+                } else if (category in this.data.settings.category) {
+                    res.characters = this.data.settings.category[row[colNames["category"]]].characters;
+                } else if (this.data.characters.indexOf(category) != -1) {
+                    res.characters = [row[colNames["category"]]];
+                } else {
+                    this.state.message.push(`存在しないカテゴリ「${row[colNames["category"]]}」が期間イベントに指定されています`);
+                    continue;
+                };
+                res.category = category;
+                res.title = String(row[colNames["title"]]);
+                res.limit = (colNames["limit"] in row) ? String(row[colNames["limit"]]) : "hour";
+                res.startDate = this.formatDate(row[colNames["startDate"]]);
+                res.startDate = this.resetDateFromLimit(res.startDate, res.limit);
+                res.endDate = this.formatDate(row[colNames["endDate"]]);
+                res.endDate = this.resetDateFromLimit(res.endDate, res.limit);
+                res.display = (colNames["display"] in row) ? String(row[colNames["display"]]) : "day";
+                res.startDetail = (colNames["startDetail"] in row) ? String(row[colNames["startDetail"]]) : "";
+                res.endDetail = (colNames["endDetail"] in row) ? String(row[colNames["endDetail"]]) : "";
+                // マーカーを作成
+                let startMarker = {};
+                let endMarker = {};
+                startMarker[eventColNames["category"]] = category;
+                endMarker[eventColNames["category"]] = category;
+                startMarker[eventColNames["title"]] = res.title + "開始";
+                endMarker[eventColNames["title"]] = res.title + "終了";
+                startMarker[eventColNames["date"]] = res.startDate;
+                endMarker[eventColNames["date"]] = res.endDate;
+                startMarker[eventColNames["limit"]] = res.limit;
+                endMarker[eventColNames["limit"]] = res.limit;
+                startMarker[eventColNames["detail"]] = res.startDetail;
+                endMarker[eventColNames["detail"]] = res.endDetail;
+                startMarker[eventColNames["beforeAfter"]] = "期間";
+                endMarker[eventColNames["beforeAfter"]] = "期間";
+                this.data.periodEvent.markers.push(startMarker);
+                this.data.periodEvent.markers.push(endMarker);
+                // イベントをキャラクターごとに作成
+                for (const characterName of res.characters) {
+                    this.data.periodEvent.events[characterName].push(res);
+                };
+            };
+        },
         createEvent() { // イベント設定を読み込んでフォーマット
             const xlsx = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["event"]], { header: 0 });
             const birthday = this.createCharacterBirthday();
             const deathday = this.createCharacterDeathday();
-            const data = xlsx.concat(birthday).concat(deathday);
+            const periodEventMarkers = this.data.periodEvent.markers;
+            const data = xlsx.concat(birthday).concat(deathday).concat(periodEventMarkers);
             const settings = this.defaults.displayLimit;
             const colNames = this.defaults.colNames["event"];
             const bfKeyDict = this.defaults.beforeAfter;
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 const category = String(data[i][colNames["category"]]);
-                const date = this.formatDate(data[i][colNames["date"]]);
+                let date = this.formatDate(data[i][colNames["date"]]);
                 const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
+                date = this.resetDateFromLimit(date, limit);
                 const beforeAfterOriginal = (colNames["beforeAfter"] in data[i]) ? String(data[i][colNames["beforeAfter"]]) : "";
                 const beforeAfter = (beforeAfterOriginal in bfKeyDict) ? beforeAfterOriginal : "";
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
-                if (limit in settings) { // 以降を無視が設定されている場合、それ以降のデータを初期化
-                    if (settings[limit] <= 0) date.setMonth(0);
-                    if (settings[limit] <= 1) date.setDate(1);
-                    if (settings[limit] <= 2) date.setHours(0);
-                    if (settings[limit] <= 3) date.setMinutes(0);
-                };
                 // 対象キャラクタデータを作成
                 let characters = [];
                 let eventCategory = "";
@@ -497,9 +582,9 @@ var app = new Vue({
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
                 await this.createCategory();
-                await this.createSchool();
                 await this.createCharacter();
                 await this.createCharacterSchoolInfo();
+                await this.createPeriodEvent();
                 await this.createEvent();
                 await this.createYearSummary();
             };
@@ -545,6 +630,7 @@ var app = new Vue({
                             "needsArrow": true,
                             "summary": false,
                             "died": characterDied,
+                            "periodEvents": vm.getCharacterPeriodEvents(characterName, date),
                         };
                         template[`${characterName}_ev`] = [];
                     });
