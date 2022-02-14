@@ -49,3 +49,8 @@ tbody > tr:hover {
 .valign-top {
   vertical-align: top !important;
 }
+
+.timeline-year-border {
+  border-top: thin solid rgb(229, 229, 229) !important;
+  border-bottom: thin none rgba(0, 0, 0, 0) !important;
+}
