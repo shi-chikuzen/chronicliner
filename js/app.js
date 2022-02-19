@@ -122,7 +122,8 @@ var app = new Vue({
             return (target > start) && (target <= end);
         },
         formatDate(input) { // 日付っぽいものをDate形式に変換する
-            if (typeof (input) == "object") {
+            const type = Object.prototype.toString.call(input);
+            if (type == "[object Date]") {
                 return input;
             } else if (typeof (input) == "string") {
                 const splitted = input.split("/");
@@ -132,7 +133,7 @@ var app = new Vue({
                 return this.convertSerial2Date(input);
             };
         },
-        resetDateFromLimit(date, limit) {
+        resetDateFromLimit(date, limit) { // 指定された閾値以下の時間単位をリセットする
             const settings = this.defaults.displayLimit;
             if (limit in settings) {
                 if (settings[limit] <= 0) date.setMonth(0);
@@ -141,6 +142,9 @@ var app = new Vue({
                 if (settings[limit] <= 3) date.setMinutes(0);
             };
             return date;
+        },
+        isInvalidDate(date) { // 無効な日付かどうかをチェック
+            return Number.isNaN(date.getDate());
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -256,7 +260,7 @@ var app = new Vue({
                 return "mb-4 mt-2";
             };
         },
-        returnTdClass(item, column) {
+        returnTdClass(item, column) { // tdに付与するクラスを返却
             const cellClass = _.cloneDeep(column.cellClass);
             const colName = column.value;
             if (this.colsTL.indexOf(colName) == -1) {
@@ -265,7 +269,7 @@ var app = new Vue({
             };
             return cellClass.join(' ');
         },
-        returnTimelineColorStyle(item, column) {
+        returnTimelineColorStyle(item, column) { // タイムライン列の背景色を返却
             const data = item[column.value];
             if (data.age < 0 || data.died == true) return `background-color: ${this.defaults.backgroundColor};`;
             return `background-color: ${data.color};`;
@@ -301,6 +305,10 @@ var app = new Vue({
                     "autoBirth": (colNames["autoBirth"] in row) ? row[colNames["autoBirth"]] : false,
                     "school": null,
                 };
+                if (this.isInvalidDate(result.birthday)) {
+                    this.state.message.push(`キャラクター${characterName}に設定された誕生日が不正です`);
+                    continue;
+                };
                 this.data.characters.push(characterName);
                 this.data.settings.character[characterName] = result;
                 this.data.periodEvent.events[characterName] = [];
@@ -331,16 +339,23 @@ var app = new Vue({
                         d.startDate.setFullYear(1900);
                         d.age = Number(d[colNames["age"]]);
                         d.enterGrade = (colNames["enterGrade"] in d) ? Number(d[colNames["enterGrade"]]) : 1;
-                        d.enterDate = (colNames["enterDate"] in d) ? vm.formatDate(d[colNames["enterDate"]]) : d[colNames["startDate"]];
+                        d.enterDate = (d[colNames["enterDate"]] in d) ? vm.formatDate(d[colNames["enterDate"]]) : _.cloneDeep(d.startDate);
                         d.autoBirth = (colNames["autoBirth"] in d) ? d[colNames["autoBirth"]] : false;
                         d.autoYear = (colNames["autoYear"] in d) ? Number(d[colNames["autoYear"]]) : 1900;
                         d.autoGrade = (colNames["autoGrade"] in d) ? Number(d[colNames["autoGrade"]]) : 1;
+                        if (vm.isInvalidDate(d.startDate)) {
+                            vm.state.message.push(`キャラクター「${characterName}」の教育課程「${d.name}」の起算日が不正です`);
+                            valid = false;
+                        } else if (vm.isInvalidDate(d.enterDate)) {
+                            vm.state.message.push(`キャラクター「${characterName}」の教育課程「${d.name}」の編入日が不正です`);
+                            valid = false;
+                        };
                         if (d.autoBirth) {
                             autoBirthIndex = index;
                             autoBirthCount++;
                         };
                         if (d.period < d.enterGrade) {
-                            vm.state.message.push(`キャラクター「${characterName}」の教育課程「${d.name}の編入学年が所属年数を超過しています」`);
+                            vm.state.message.push(`キャラクター「${characterName}」の教育課程「${d.name}」の編入学年が所属年数を超過しています`);
                             valid = false;
                         };
                     };
@@ -444,7 +459,7 @@ var app = new Vue({
                 } else if (this.data.characters.indexOf(category) != -1) {
                     res.characters = [row[colNames["category"]]];
                 } else {
-                    this.state.message.push(`存在しないカテゴリ「${row[colNames["category"]]}」が期間イベントに指定されています`);
+                    this.state.message.push(`存在しないカテゴリないしキャラクター「${row[colNames["category"]]}」が期間イベントに指定されています`);
                     continue;
                 };
                 res.category = category;
@@ -457,6 +472,10 @@ var app = new Vue({
                 res.display = (colNames["display"] in row) ? String(row[colNames["display"]]) : "day";
                 res.startDetail = (colNames["startDetail"] in row) ? String(row[colNames["startDetail"]]) : "";
                 res.endDetail = (colNames["endDetail"] in row) ? String(row[colNames["endDetail"]]) : "";
+                if (this.isInvalidDate(res.startDate) || this.isInvalidDate(res.endDate)) {
+                    this.state.message.push(`期間イベント「 ${res.title} 」に設定された期間が不正です`);
+                    continue;
+                };
                 // マーカーを作成
                 let startMarker = {};
                 let endMarker = {};
@@ -492,6 +511,10 @@ var app = new Vue({
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 const category = String(data[i][colNames["category"]]);
                 let date = this.formatDate(data[i][colNames["date"]]);
+                if (this.isInvalidDate(date)) {
+                    this.state.message.push(`イベント「 ${res.title} 」に設定された日時が不正です`);
+                    continue;
+                };
                 const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
                 date = this.resetDateFromLimit(date, limit);
                 const beforeAfterOriginal = (colNames["beforeAfter"] in data[i]) ? String(data[i][colNames["beforeAfter"]]) : "";
@@ -738,6 +761,8 @@ var app = new Vue({
                 await this.updateTimelineData();
                 this.state.loading = false;
                 this.state.ready = true;
+            } else {
+                this.state.loading = "error";
             };
         },
         async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う

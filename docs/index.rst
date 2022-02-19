@@ -54,6 +54,7 @@ Contact
    ./source/data/school
    ./source/data/event
    ./source/data/periodEvent
+   ./source/info/aboutErrors
 
 .. toctree::
    :maxdepth: 2
