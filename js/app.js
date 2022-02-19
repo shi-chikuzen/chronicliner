@@ -542,7 +542,7 @@ var app = new Vue({
         createYearSummary() { // 年ごとのサマリーデータをフォーマットする
             let yearSummary = {}
             for (const key of this.eventKeys) {
-                const year = Number(key.slice(0, 4));
+                const year = moment(key.slice(0, -2)).year();
                 const date = new Date(year, 11, 31, 23, 59, 59);
                 yearSummary[year] = {
                     "year": year,
@@ -725,22 +725,20 @@ var app = new Vue({
         // Functions
         async init() { // 初期化処理
             const vm = this;
-            this.state.domUpdated = false;
             this.state.ready = false;
             this.state.message = [];
             this.data = _.cloneDeep(this.defaults.data);
             await this.formatData();
-            await Object.keys(this.data.settings.category).forEach(key => {
-                vm.selectAllCharactersInCategory(key);
-            });
-            await this.createTimelineData();
-            this.updateYearSummary();
-            await this.updateTimelineData();
-            this.state.loading = false;
-            this.state.ready = true;
-            this.$nextTick(function () {
-                this.state.domUpdated = true;
-            });
+            if (this.eventKeys.length > 0) {
+                await Object.keys(this.data.settings.category).forEach(key => {
+                    vm.selectAllCharactersInCategory(key);
+                });
+                await this.createTimelineData();
+                this.updateYearSummary();
+                await this.updateTimelineData();
+                this.state.loading = false;
+                this.state.ready = true;
+            };
         },
         async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う
             await this.createTimelineColumns();

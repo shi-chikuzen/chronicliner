@@ -7,7 +7,7 @@
 Chronicliner v2.0.0
 ========================================
 
-.. image:: ./img/top.png
+.. image:: ./img/usage_timeline.png
    :alt: Chronicliner Application Image
 
 Chroniclinerは、キャラの年齢やら学年やら時系列がわからなくなった限界同人オタク&クリエイターのために作成された年表ツールです。
@@ -53,6 +53,7 @@ Contact
    ./source/data/character
    ./source/data/school
    ./source/data/event
+   ./source/data/periodEvent
 
 .. toctree::
    :maxdepth: 2

@@ -32,7 +32,7 @@
                 style="border-bottom: 1px solid #eaf1f5 !important;"
                 color="white"
                 elevation="0">
-                    <v-toolbar-title class="font logo">Chronicliner</v-toolbar-title>
+                    <v-toolbar-title class="font logo pr-5">Chronicliner</v-toolbar-title>
                     <v-spacer></v-spacer>
                     <!-- File Form -->
                     <v-form>
@@ -55,6 +55,13 @@
                             {{this.fileSelected.name}}
                         </v-chip>
                     </v-expand-x-transition>
+                    <a href="" target="_blank" rel="noopener noreferrer">
+                        <v-btn icon>
+                            <v-icon>
+                                mdi-help-circle-outline
+                            </v-icon>
+                        </v-btn>
+                    </a>
                 </v-app-bar>
                 <!-- Contents -->
                 <v-main id="main">
@@ -122,7 +129,6 @@
                                         <v-expand-transition>
                                             <!-- Timeline Table -->
                                             <v-data-table
-                                            id="timeline"
                                             ref="timeline"
                                             :headers="timelineHeaders"
                                             :items="timelineData"
@@ -290,7 +296,7 @@
                 </v-main>
                 <v-snackbar
                 v-model="this.state.errorSnack"
-                timeout=5000>
+                timeout="-1">
                     <span v-html="this.snackMessage"></span>
                     <template v-slot:action="{attrs}">
                         <v-btn

@@ -17,7 +17,7 @@
 3. 右上のフォルダアイコンをクリックし、 ``./data/sample.xlsx`` を選択する
 4. 以下画像のようなページが表示されるまで待つ
 
-.. image:: ../../img/top.png
+.. image:: ../../img/usage_timeline.png
     :alt: サンプルデータの表示結果
 
 2. 作成したデータの表示
@@ -32,5 +32,6 @@
    + :doc:`../data/character`
    + :doc:`../data/school`
    + :doc:`../data/event`
+   + :doc:`../data/periodEvent`
 
 4. :ref:`サンプルデータの表示 <quickstart_display>` と同様にファイルを読み込み表示する
