@@ -197,3 +197,5 @@ yarn-error.log
 *.xhtml
 
 # End of https://www.toptal.com/developers/gitignore/api/web,vuejs,vue,python
+
+.vscode
