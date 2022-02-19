@@ -1,6 +1,7 @@
 *.ai
 data/mydata
 .DS_Store
+<<<<<<< HEAD
 document/
 *.pptx
 *.pdf
@@ -199,3 +200,5 @@ yarn-error.log
 # End of https://www.toptal.com/developers/gitignore/api/web,vuejs,vue,python
 
 .vscode
+=======
+>>>>>>> master
