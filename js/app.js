@@ -426,6 +426,7 @@ var app = new Vue({
                 data[colNames["date"]] = character.birthday;
                 data[colNames["limit"]] = "hour";
                 data[colNames["title"]] = `${name}誕生`;
+                data[colNames["detail"]] = character.birthdayDetail;
                 rows.push(data);
             };
             return rows;
@@ -440,6 +441,7 @@ var app = new Vue({
                     data[colNames["date"]] = character.death;
                     data[colNames["limit"]] = "hour";
                     data[colNames["title"]] = `${name}死亡`;
+                    data[colNames["detail"]] = character.deathdayDetail;
                     rows.push(data);
                 };
             };
