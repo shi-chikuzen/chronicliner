@@ -27,7 +27,7 @@ var app = new Vue({
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント", "periodEvent": "期間イベント" },
             "colNames": {
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
-                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算" },
+                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算", "tag": "タグ" },
                 "school": { "characterName": "キャラクタ名", "name": "教育課程名", "period": "基準所属年数", "startDate": "起算日", "age": "開始年齢", "enterGrade": "編入学年", "enterDate": "編入日", "autoBirth": "誕生年自動計算に使用", "autoYear": "誕生年起算年", "autoGrade": "誕生年起算学年" },
                 "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細" },
                 "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細" },
@@ -39,7 +39,7 @@ var app = new Vue({
             "borderColor": "rgb(229, 229, 229)",
             "summaryBackgroundColor": "#DADADA"
         },
-        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [] },
+        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [], "tags": {"character": [], "event": [], "master": []} },
         characterSelected: [],
         eventKeys: [],
         timelineHeaders: [],
@@ -296,6 +296,8 @@ var app = new Vue({
                     continue;
                 };
                 const characterName = String(row[colNames["name"]]);
+                const tagStr = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
+                const tags = (tagStr == "") ? [] : tagStr.replace(/\s+/g, "").split("#").filter(t => t != "");
                 let result = {
                     "category": String(row[colNames["category"]]),
                     "birthday": this.resetDateFromLimit(this.formatDate(row[colNames["birthday"]]), "hour"),
@@ -304,6 +306,7 @@ var app = new Vue({
                     "deathdayDetail": (colNames["deathdayDetail"] in row) ? String(row[colNames["deathdayDetail"]]) : "",
                     "autoBirth": (colNames["autoBirth"] in row) ? row[colNames["autoBirth"]] : false,
                     "school": null,
+                    "tags": tags,
                 };
                 if (this.isInvalidDate(result.birthday)) {
                     this.state.message.push(`キャラクター${characterName}に設定された誕生日が不正です`);
@@ -313,6 +316,7 @@ var app = new Vue({
                 this.data.settings.character[characterName] = result;
                 this.data.periodEvent.events[characterName] = [];
                 this.data.settings.category[result.category].characters.push(characterName);
+                this.data.tags.character = this.data.tags.character.concat(tags);
             };
         },
         createCharacterSchoolInfo() { // 教育課程設定を作成
@@ -690,7 +694,7 @@ var app = new Vue({
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
                         headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell", "valign-top"], width: "0%", });
-                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4", "valign-top"] });
+                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4", "valign-top"], tags: vm.data.settings.character[character].tags});
                     };
                 });
             };

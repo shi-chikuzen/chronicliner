@@ -137,11 +137,12 @@
                                             v-show="this.state.ready"
                                             calculate-widths="true"
                                             hide-default-footer
+                                            hide-default-header
                                             :height="this.tableHeight"
                                             fixed-header
                                             :items-per-page="-1">
                                                 <!-- Header（1行目） -->
-                                                <template v-slot:header="props">
+                                                <template v-slot:header>
                                                     <thead>
                                                         <tr>
                                                             <th colspan="1" class="border-none"><!-- 年数列 --></th>
@@ -152,6 +153,25 @@
                                                                 :style="'background-color: ' + category.color + '; border: thin solid white;'"
                                                                 class="white--text">
                                                                     {{ name }}
+                                                                </th>
+                                                            </template>
+                                                        </tr>
+                                                        <tr>
+                                                            <template v-for="th in timelineHeaders">
+                                                                <th
+                                                                :style="'width: ' + th.width + ';'"
+                                                                :class="th.class.join(' ')">
+                                                                    <span v-if="th.text == ''"></span>
+                                                                    <span v-else>
+                                                                        {{th.text}}<br>
+                                                                        <div class="d-flex flex-wrap">
+                                                                            <div
+                                                                            v-for="tag in th.tags"
+                                                                            class="mr-1 grey--text text--lighten-1">
+                                                                                #{{tag}}
+                                                                            </div>
+                                                                        </div>
+                                                                    </span>
                                                                 </th>
                                                             </template>
                                                         </tr>
