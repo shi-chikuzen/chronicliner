@@ -293,6 +293,11 @@
                                                                                                 <div class="text-center"
                                                                                                 v-text="event.title" style="white-space: pre-line;">
                                                                                                 </div>
+                                                                                                <div v-if="event.tags.length > 0" class="d-flex flex-wrap flex-grow-1" style="width: 100%;">
+                                                                                                    <div v-for="tag in event.tags" class="mr-1 text-caption" :style="returnTagTextStyle(event.category)">
+                                                                                                        #{{tag}}
+                                                                                                    </div>
+                                                                                                </div>
                                                                                             </v-col>
                                                                                         </v-row>
                                                                                     </v-card-text>
