@@ -41,6 +41,8 @@ var app = new Vue({
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [], "tags": {"character": [], "event": [], "master": []} },
         characterSelected: [],
+        tagBulkMode: false,
+        tagSelected: {"character": [], "event": [], "master": []},
         eventKeys: [],
         timelineHeaders: [],
         timelineData: [],
@@ -542,6 +544,7 @@ var app = new Vue({
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
                 const tagStr = (colNames["tag"] in data[i]) ? String(data[i][colNames["tag"]]) : "";
                 const tags = this.formatTag(tagStr);
+                this.data.tags.event = this.data.tags.event.concat(tags);
                 // 対象キャラクタデータを作成
                 let characters = [];
                 let eventCategory = "";
@@ -609,6 +612,7 @@ var app = new Vue({
                         "characters": [characterName],
                         "numEvents": { "all": 0, "category": 0, "character": 0 },
                         "detail": "",
+                        "tags": [],
                     }];
                     yearSummary[year][`${characterName}_tl`] = {
                         "name": characterName,
@@ -624,6 +628,11 @@ var app = new Vue({
             };
             this.yearSummary = yearSummary;
         },
+        setTags() { // タグから重複を排除
+            this.data.tags.character = Array.from(new Set(this.data.tags.character));
+                this.data.tags.event = Array.from(new Set(this.data.tags.event));
+                this.data.tags.master = Array.from(new Set(this.data.tags.character.concat(this.data.tags.event)));
+        },
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
                 await this.createCategory();
@@ -632,6 +641,7 @@ var app = new Vue({
                 await this.createPeriodEvent();
                 await this.createEvent();
                 await this.createYearSummary();
+                this.setTags();
             };
             if (this.state.message.length != 0) {
                 this.state.errorSnack = true;

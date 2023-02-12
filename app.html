@@ -73,7 +73,63 @@
                                     <v-expansion-panel
                                     elevation="1">
                                         <v-expansion-panel-header class="size line-height">
-                                            表示設定
+                                            タグ表示設定
+                                        </v-expansion-panel-header>
+                                        <v-expansion-panel-content>
+                                            <v-tabs
+                                            vertical
+                                            v-show="this.state.ready">
+                                                <v-tab class="justify-start" :disabled="tagBulkMode">
+                                                    キャラクタータグ
+                                                </v-tab>
+                                                <v-tab class="justify-start" :disabled="tagBulkMode">
+                                                    イベントタグ
+                                                </v-tab>
+                                                <v-tab class="justify-start">
+                                                    一括設定
+                                                </v-tab>
+                                                <v-tab-item
+                                                v-for="[key, tags] in Object.entries(this.data.tags)">
+                                                    <v-card flat>
+                                                        <v-card-text>
+                                                            <v-row v-if="key == 'master'" class="py-0">
+                                                                <v-col class="py-0">
+                                                                    <v-switch v-model="tagBulkMode" :label="'タグ表示一括設定を' + ((tagBulkMode) ? '無効にする':'有効にする')" :color="defaults.color[0]"></v-switch>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <v-expand-transition>
+                                                                <v-row class="py-0" v-show="(key != ('master') || tagBulkMode)">
+                                                                    <v-col class="py-0">
+                                                                        <v-btn text @click="">
+                                                                            すべて選択
+                                                                        </v-btn>
+                                                                        <v-btn text @click="">
+                                                                            すべて選択解除
+                                                                        </v-btn>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-expand-transition>
+                                                            <v-expand-transition>
+                                                                <v-row v-show="(key != ('master') || tagBulkMode)">
+                                                                    <v-col v-for="tag in tags">
+                                                                        <v-checkbox v-model="tagSelected[key]" :label="tag" :value="tag"></v-checkbox>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-expand-transition>
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-tab-item>
+                                            </v-tabs>
+                                        </v-expansion-panel-content>
+                                    </v-expansion-panel>
+                                </v-expansion-panels>
+                            </v-col>
+                            <v-col cols="12">
+                                <v-expansion-panels accordion>
+                                    <v-expansion-panel
+                                    elevation="1">
+                                        <v-expansion-panel-header class="size line-height">
+                                            キャラクター表示設定
                                         </v-expansion-panel-header>
                                         <v-expansion-panel-content>
                                             <v-tabs
