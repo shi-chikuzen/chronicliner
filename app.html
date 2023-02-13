@@ -112,7 +112,7 @@
                                                             <v-expand-transition>
                                                                 <v-row v-show="(key != ('master') || tagBulkMode)">
                                                                     <v-col v-for="tag in tags">
-                                                                        <v-checkbox v-model="tagSelected[key]" :label="tag" :value="tag"></v-checkbox>
+                                                                        <v-checkbox v-model="tagSelected[key]" :label="tag" :value="tag" @change="changeTagState(key)"></v-checkbox>
                                                                     </v-col>
                                                                 </v-row>
                                                             </v-expand-transition>

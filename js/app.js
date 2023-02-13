@@ -831,6 +831,30 @@ var app = new Vue({
                 };
             });
         },
+        changeCharacterSelected(tags) { // 現在のタグ選択状態に合わせてキャラクター表示状態を更新
+            if (tags.length == 0) { // タグ選択が全解除状態の場合は全キャラクターを選択状態に戻す
+                this.characterSelected = [...this.data.characters];
+                return;
+            };
+            // 通常選択時
+            const characters = this.data.settings.character;
+            let characterSelected = [];
+            for (const [characterName, characterData] of Object.entries(characters)) {
+                console.log(characterName, characterData)
+                const isTargetCharacter = this.intersection(tags, characterData.tags).length > 0;
+                if (isTargetCharacter) {
+                    characterSelected.push(characterName);
+                };
+            };
+            this.characterSelected = Array.from(new Set(characterSelected));
+        },
+        changeTagState(mode) { // タグ選択状態の変更に合わせて更新
+            const targetTags = this.tagSelected[mode];
+            if (mode == "character" || mode == "master") {
+                this.changeCharacterSelected(targetTags);
+            };
+            if (mode == "event" || mode == "master") { }
+        },
         selectAllTags(mode) { // タグをすべて選択する
             const vm = this;
             const tags = this.data.tags[mode];
@@ -839,6 +863,7 @@ var app = new Vue({
                     vm.tagSelected[mode].push(tag);
                 };
             });
+            this.changeTagState(mode);
         },
         removeAllTags(mode) { // タグをすべて選択解除する
             const vm = this;
@@ -849,6 +874,7 @@ var app = new Vue({
                     vm.tagSelected[mode].splice(index, 1);
                 };
             });
+            this.changeTagState(mode);
         },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
