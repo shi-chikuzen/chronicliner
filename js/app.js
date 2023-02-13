@@ -831,6 +831,25 @@ var app = new Vue({
                 };
             });
         },
+        selectAllTags(mode) { // タグをすべて選択する
+            const vm = this;
+            const tags = this.data.tags[mode];
+            tags.forEach(function (tag) {
+                if (vm.tagSelected[mode].indexOf(tag) == -1) {
+                    vm.tagSelected[mode].push(tag);
+                };
+            });
+        },
+        removeAllTags(mode) { // タグをすべて選択解除する
+            const vm = this;
+            const tags = this.data.tags[mode];
+            tags.forEach(function (tag) {
+                const index = vm.tagSelected[mode].indexOf(tag);
+                if (index != -1) {
+                    vm.tagSelected[mode].splice(index, 1);
+                };
+            });
+        },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
             const windowHeight = window.innerHeight;

@@ -100,10 +100,10 @@
                                                             <v-expand-transition>
                                                                 <v-row class="py-0" v-show="(key != ('master') || tagBulkMode)">
                                                                     <v-col class="py-0">
-                                                                        <v-btn text @click="">
+                                                                        <v-btn text @click="selectAllTags(key)">
                                                                             すべて選択
                                                                         </v-btn>
-                                                                        <v-btn text @click="">
+                                                                        <v-btn text @click="removeAllTags(key)">
                                                                             すべて選択解除
                                                                         </v-btn>
                                                                     </v-col>
