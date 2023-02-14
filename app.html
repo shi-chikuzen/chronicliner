@@ -248,7 +248,7 @@
                                                                         text
                                                                         icon
                                                                         color="primary"
-                                                                        @click="toggleYearSummaryShow(item.year); update();">
+                                                                        @click="toggleYearSummaryShow(item.year); update('event');">
                                                                             <v-icon v-if="yearSummary[item.year].summarize" class="size">
                                                                                 mdi-plus
                                                                             </v-icon>
@@ -313,6 +313,7 @@
                                                                     <v-col cols="12">
                                                                         <v-card
                                                                         v-for="(event, index) in item[column.value]"
+                                                                        v-show="isEventTagsMatch2Card(item.summary, event.tags)"
                                                                         :color="returnCardColor(event.category)"
                                                                         :class="returnCardClass(index, item[column.value])"
                                                                         outlined>

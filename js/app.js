@@ -580,7 +580,6 @@ var app = new Vue({
                     "characters": characters,
                     "detail": detail,
                     "tags": tags,
-                    "show": true,
                 };
                 this.data.event[key].events[eventCategory].push(row);
                 this.data.event[key].characters = this.union(characters, this.data.event[key].characters);
@@ -617,7 +616,6 @@ var app = new Vue({
                         "numEvents": { "all": 0, "category": 0, "character": 0 },
                         "detail": "",
                         "tags": [],
-                        "show": true,
                     }];
                     yearSummary[year][`${characterName}_tl`] = {
                         "name": characterName,
@@ -740,11 +738,17 @@ var app = new Vue({
                 if (mode === null) { return true; }; // タグ変更なしの場合はreturn
                 if (Array.isArray(mode)) { return true; } // キャラクター選択変更時はreturn
             };
-            mode = (mode === null || Array.isArray(mode)) ? "master" : mode;
+            mode = (mode === null || Array.isArray(mode) || this.tagBulkMode) ? "master" : mode;
             // タグマッチ判定
             const targetTags = this.tagSelected[mode];
             if (targetTags.length === 0) { return true; }; // タグが選択されていない場合はreturn
             return this.intersection(targetTags, row.tags).length > 0;
+        },
+        isEventTagsMatch2Card(summary, tags) {
+            if (summary) return true;
+            const currentTag = (this.tagBulkMode) ? this.tagSelected["master"] : this.tagSelected["event"];
+            if (currentTag.length == 0) return true;
+            return (this.intersection(currentTag, tags).length == 0) ? false : true;
         },
         updateTimelineData(mode=null) { // characterSelectedの更新に合わせてshowの状態を更新
             let currentAge = {};
