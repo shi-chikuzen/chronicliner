@@ -73,6 +73,7 @@ var app = new Vue({
     watch: {
         workbook: 'init',
         characterSelected: 'update',
+        tagBulkMode: 'changeTagBulkMode',
     },
     methods: {
         // Utils
@@ -570,6 +571,7 @@ var app = new Vue({
                         "beforeAfter": beforeAfter,
                         "characters": [],
                         "events": { "all": [], "category": [], "character": [] },
+                        "tags": [],
                     };
                 };
                 const row = {
@@ -578,9 +580,11 @@ var app = new Vue({
                     "characters": characters,
                     "detail": detail,
                     "tags": tags,
+                    "show": true,
                 };
                 this.data.event[key].events[eventCategory].push(row);
                 this.data.event[key].characters = this.union(characters, this.data.event[key].characters);
+                this.data.event[key].tags = this.union(tags, this.data.event[key].tags);
             };
             // 時系列Keyデータを作成
             const keys = Object.keys(this.data.event);
@@ -613,6 +617,7 @@ var app = new Vue({
                         "numEvents": { "all": 0, "category": 0, "character": 0 },
                         "detail": "",
                         "tags": [],
+                        "show": true,
                     }];
                     yearSummary[year][`${characterName}_tl`] = {
                         "name": characterName,
@@ -655,6 +660,7 @@ var app = new Vue({
             this.eventKeys.forEach(function (key) {
                 const date = vm.data.event[key].date;
                 const year = date.getFullYear();
+                const tags = vm.data.event[key].tags;
                 const eventData = vm.data.event[key].events;
                 if (currentYear != year) {
                     data.push(vm.yearSummary[currentYear]);
@@ -671,6 +677,7 @@ var app = new Vue({
                     "beforeAfter": vm.data.event[key].beforeAfter,
                     "summary": false,
                     "height": "0px",
+                    "tags": tags,
                 };
                 for (const [key, category] of Object.entries(vm.data.settings.category)) {
                     const characters = category.characters;
@@ -726,7 +733,20 @@ var app = new Vue({
             };
             this.timelineHeaders = headers;
         },
-        updateTimelineData() { // characterSelectedの更新に合わせてshowの状態を更新
+        isEventTagsMatch2Row(mode, row) {
+            // 処理スキップ
+            if (row.summary == true) { return true; } // サマリー行の場合はreturn
+            if (!this.tagBulkMode) {
+                if (mode === null) { return true; }; // タグ変更なしの場合はreturn
+                if (Array.isArray(mode)) { return true; } // キャラクター選択変更時はreturn
+            };
+            mode = (mode === null || Array.isArray(mode)) ? "master" : mode;
+            // タグマッチ判定
+            const targetTags = this.tagSelected[mode];
+            if (targetTags.length === 0) { return true; }; // タグが選択されていない場合はreturn
+            return this.intersection(targetTags, row.tags).length > 0;
+        },
+        updateTimelineData(mode=null) { // characterSelectedの更新に合わせてshowの状態を更新
             let currentAge = {};
             let currentState = {};
             this.colsTL.forEach(function (colName) {
@@ -738,7 +758,7 @@ var app = new Vue({
                 const row = this.timelineData[index];
                 row.height = "0px";
                 // 列がshow状態かどうかを判断
-                if ((this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize)) {
+                if ((this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize) && this.isEventTagsMatch2Row(mode, row)) {
                     row.show = true;
                     // Year列の表示状態変更
                     if (currentYear != row.year) {
@@ -790,16 +810,16 @@ var app = new Vue({
                 });
                 await this.createTimelineData();
                 this.updateYearSummary();
-                await this.updateTimelineData();
+                await this.updateTimelineData(null);
                 this.state.loading = false;
                 this.state.ready = true;
             } else {
                 this.state.loading = "error";
             };
         },
-        async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う
+        async update(mode = null) { // 表示キャラクター変更時にデータリセットとスタイリングを行う
             await this.createTimelineColumns();
-            await this.updateTimelineData();
+            await this.updateTimelineData(mode);
             await this.setArrorFirstDied();
             this.$nextTick(function () { // DOM更新後に処理
                 this.setInnerTdHeight();
@@ -840,7 +860,6 @@ var app = new Vue({
             const characters = this.data.settings.character;
             let characterSelected = [];
             for (const [characterName, characterData] of Object.entries(characters)) {
-                console.log(characterName, characterData)
                 const isTargetCharacter = this.intersection(tags, characterData.tags).length > 0;
                 if (isTargetCharacter) {
                     characterSelected.push(characterName);
@@ -853,7 +872,9 @@ var app = new Vue({
             if (mode == "character" || mode == "master") {
                 this.changeCharacterSelected(targetTags);
             };
-            if (mode == "event" || mode == "master") { }
+            if (mode == "event" || mode == "master") {
+                this.update(mode);
+            };
         },
         selectAllTags(mode) { // タグをすべて選択する
             const vm = this;
@@ -875,6 +896,14 @@ var app = new Vue({
                 };
             });
             this.changeTagState(mode);
+        },
+        changeTagBulkMode() {
+            if (this.tagBulkMode) {
+                this.changeTagState("master");
+            } else {
+                this.changeTagState("character");
+                this.changeTagState("event");
+            };
         },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
