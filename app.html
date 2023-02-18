@@ -248,7 +248,7 @@
                                                                         text
                                                                         icon
                                                                         color="primary"
-                                                                        @click="toggleYearSummaryShow(item.year); update('event');">
+                                                                        @click="toggleYearSummaryShow(item.year); update(currentEventTagMode);">
                                                                             <v-icon v-if="yearSummary[item.year].summarize" class="size">
                                                                                 mdi-plus
                                                                             </v-icon>
@@ -350,7 +350,12 @@
                                                                                                 <div class="text-center"
                                                                                                 v-text="event.title" style="white-space: pre-line;">
                                                                                                 </div>
-                                                                                                <div v-if="event.tags.length > 0" class="d-flex flex-wrap flex-grow-1" style="width: 100%;">
+                                                                                                <div v-if="event.tags.length > 0 || event.birthday" class="d-flex flex-wrap flex-grow-1" style="width: 100%;">
+                                                                                                    <div v-if="event.birthday">
+                                                                                                        <v-icon size="small">
+                                                                                                            mdi-cake
+                                                                                                        </v-icon>
+                                                                                                    </div>
                                                                                                     <div v-for="tag in event.tags" class="mr-1 text-caption" :style="returnTagTextStyle(event.category)">
                                                                                                         #{{tag}}
                                                                                                     </div>

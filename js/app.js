@@ -59,6 +59,9 @@ var app = new Vue({
         colsEV: function () {
             return this.data.characters.map(name => name + "_ev");
         },
+        currentEventTagMode: function () {
+            return ((this.tagBulkMode) ? 'master' : 'event')
+        }
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
@@ -151,6 +154,9 @@ var app = new Vue({
         },
         formatTag(tagStr) {
             return (tagStr == "") ? [] : tagStr.replace(/\s+/g, "").split("#").filter(t => t != "");
+        },
+        isSameDate(date1, date2) {
+            return (date1.getDate() == date2.getDate()) && (date1.getMonth() == date2.getMonth());
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -660,6 +666,7 @@ var app = new Vue({
                 const year = date.getFullYear();
                 const tags = vm.data.event[key].tags;
                 const eventData = vm.data.event[key].events;
+                const displayLimit = vm.defaults.displayLimit[vm.data.event[key].limit];
                 if (currentYear != year) {
                     data.push(vm.yearSummary[currentYear]);
                     currentYear = year;
@@ -669,7 +676,7 @@ var app = new Vue({
                     "year": date.getFullYear(),
                     "date": date,
                     "characters": [],
-                    "displayLimit": vm.defaults.displayLimit[vm.data.event[key].limit],
+                    "displayLimit": displayLimit,
                     "show": true,
                     "isFirstEvent": true,
                     "beforeAfter": vm.data.event[key].beforeAfter,
@@ -703,7 +710,10 @@ var app = new Vue({
                         eventData[categoryName].forEach(function (event) {
                             row.characters = vm.union(row.characters, event.characters);
                             for (const characterName of event.characters) {
-                                row[`${characterName}_ev`].push(event);
+                                const characterBirthday = vm.data.settings.character[characterName].birthday;
+                                let tmp_ev = _.clone(event);
+                                tmp_ev["birthday"] = vm.isSameDate(characterBirthday, date) && (displayLimit >= 2);
+                                row[`${characterName}_ev`].push(tmp_ev);
                                 vm.yearSummary[year][`${characterName}_ev`][0]["numEvents"][categoryName] += 1;
                             };
                         });
