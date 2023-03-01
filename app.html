@@ -55,7 +55,7 @@
                             {{this.fileSelected.name}}
                         </v-chip>
                     </v-expand-x-transition>
-                    <a href="" target="_blank" rel="noopener noreferrer">
+                    <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank" rel="noopener noreferrer">
                         <v-btn icon>
                             <v-icon>
                                 mdi-help-circle-outline
@@ -73,7 +73,63 @@
                                     <v-expansion-panel
                                     elevation="1">
                                         <v-expansion-panel-header class="size line-height">
-                                            表示設定
+                                            タグ表示設定
+                                        </v-expansion-panel-header>
+                                        <v-expansion-panel-content>
+                                            <v-tabs
+                                            vertical
+                                            v-show="this.state.ready">
+                                                <v-tab class="justify-start" :disabled="tagBulkMode">
+                                                    キャラクタータグ
+                                                </v-tab>
+                                                <v-tab class="justify-start" :disabled="tagBulkMode">
+                                                    イベントタグ
+                                                </v-tab>
+                                                <v-tab class="justify-start">
+                                                    一括設定
+                                                </v-tab>
+                                                <v-tab-item
+                                                v-for="[key, tags] in Object.entries(this.data.tags)">
+                                                    <v-card flat>
+                                                        <v-card-text>
+                                                            <v-row v-if="key == 'master'" class="py-0">
+                                                                <v-col class="py-0">
+                                                                    <v-switch v-model="tagBulkMode" :label="'タグ表示一括設定を' + ((tagBulkMode) ? '無効にする':'有効にする')" :color="defaults.color[0]"></v-switch>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <v-expand-transition>
+                                                                <v-row class="py-0" v-show="(key != ('master') || tagBulkMode)">
+                                                                    <v-col class="py-0">
+                                                                        <v-btn text @click="selectAllTags(key)">
+                                                                            すべて選択
+                                                                        </v-btn>
+                                                                        <v-btn text @click="removeAllTags(key)">
+                                                                            すべて選択解除
+                                                                        </v-btn>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-expand-transition>
+                                                            <v-expand-transition>
+                                                                <v-row v-show="(key != ('master') || tagBulkMode)">
+                                                                    <v-col v-for="tag in tags">
+                                                                        <v-checkbox v-model="tagSelected[key]" :label="tag" :value="tag" @change="changeTagState(key)"></v-checkbox>
+                                                                    </v-col>
+                                                                </v-row>
+                                                            </v-expand-transition>
+                                                        </v-card-text>
+                                                    </v-card>
+                                                </v-tab-item>
+                                            </v-tabs>
+                                        </v-expansion-panel-content>
+                                    </v-expansion-panel>
+                                </v-expansion-panels>
+                            </v-col>
+                            <v-col cols="12">
+                                <v-expansion-panels accordion>
+                                    <v-expansion-panel
+                                    elevation="1">
+                                        <v-expansion-panel-header class="size line-height">
+                                            キャラクター表示設定
                                         </v-expansion-panel-header>
                                         <v-expansion-panel-content>
                                             <v-tabs
@@ -137,11 +193,12 @@
                                             v-show="this.state.ready"
                                             calculate-widths="true"
                                             hide-default-footer
+                                            hide-default-header
                                             :height="this.tableHeight"
                                             fixed-header
                                             :items-per-page="-1">
                                                 <!-- Header（1行目） -->
-                                                <template v-slot:header="props">
+                                                <template v-slot:header>
                                                     <thead>
                                                         <tr>
                                                             <th colspan="1" class="border-none"><!-- 年数列 --></th>
@@ -152,6 +209,25 @@
                                                                 :style="'background-color: ' + category.color + '; border: thin solid white;'"
                                                                 class="white--text">
                                                                     {{ name }}
+                                                                </th>
+                                                            </template>
+                                                        </tr>
+                                                        <tr>
+                                                            <template v-for="th in timelineHeaders">
+                                                                <th
+                                                                :style="'width: ' + th.width + ';'"
+                                                                :class="th.class.join(' ')">
+                                                                    <span v-if="th.text == ''"></span>
+                                                                    <span v-else>
+                                                                        {{th.text}}<br>
+                                                                        <div class="d-flex flex-wrap">
+                                                                            <div
+                                                                            v-for="tag in th.tags"
+                                                                            class="mr-1 grey--text text--lighten-1">
+                                                                                #{{tag}}
+                                                                            </div>
+                                                                        </div>
+                                                                    </span>
                                                                 </th>
                                                             </template>
                                                         </tr>
@@ -172,7 +248,7 @@
                                                                         text
                                                                         icon
                                                                         color="primary"
-                                                                        @click="toggleYearSummaryShow(item.year); update();">
+                                                                        @click="toggleYearSummaryShow(item.year); update(currentEventTagMode);">
                                                                             <v-icon v-if="yearSummary[item.year].summarize" class="size">
                                                                                 mdi-plus
                                                                             </v-icon>
@@ -237,6 +313,7 @@
                                                                     <v-col cols="12">
                                                                         <v-card
                                                                         v-for="(event, index) in item[column.value]"
+                                                                        v-show="isEventTagsMatch2Card(item.summary, event.tags)"
                                                                         :color="returnCardColor(event.category)"
                                                                         :class="returnCardClass(index, item[column.value])"
                                                                         outlined>
@@ -272,6 +349,16 @@
                                                                                             <v-col cols="" class="pa-3 d-flex flex-column align-content-center align-center justify-center">
                                                                                                 <div class="text-center"
                                                                                                 v-text="event.title" style="white-space: pre-line;">
+                                                                                                </div>
+                                                                                                <div v-if="event.tags.length > 0 || event.birthday" class="d-flex flex-wrap flex-grow-1" style="width: 100%;">
+                                                                                                    <div v-if="event.birthday">
+                                                                                                        <v-icon size="small">
+                                                                                                            mdi-cake
+                                                                                                        </v-icon>
+                                                                                                    </div>
+                                                                                                    <div v-for="tag in event.tags" class="mr-1 text-caption" :style="returnTagTextStyle(event.category)">
+                                                                                                        #{{tag}}
+                                                                                                    </div>
                                                                                                 </div>
                                                                                             </v-col>
                                                                                         </v-row>

@@ -27,10 +27,10 @@ var app = new Vue({
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント", "periodEvent": "期間イベント" },
             "colNames": {
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
-                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算" },
+                "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算", "tag": "タグ" },
                 "school": { "characterName": "キャラクタ名", "name": "教育課程名", "period": "基準所属年数", "startDate": "起算日", "age": "開始年齢", "enterGrade": "編入学年", "enterDate": "編入日", "autoBirth": "誕生年自動計算に使用", "autoYear": "誕生年起算年", "autoGrade": "誕生年起算学年" },
-                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細" },
-                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細" },
+                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細", "tag": "タグ" },
+                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細", "tag": "タグ" },
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
             "displayTime": { "year": "年", "month": "ヶ月", "day": "日", "hour": "時間", "minute": "分", "second": "秒" },
@@ -39,8 +39,10 @@ var app = new Vue({
             "borderColor": "rgb(229, 229, 229)",
             "summaryBackgroundColor": "#DADADA"
         },
-        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [] },
+        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [], "tags": {"character": [], "event": [], "master": []} },
         characterSelected: [],
+        tagBulkMode: false,
+        tagSelected: {"character": [], "event": [], "master": []},
         eventKeys: [],
         timelineHeaders: [],
         timelineData: [],
@@ -57,6 +59,9 @@ var app = new Vue({
         colsEV: function () {
             return this.data.characters.map(name => name + "_ev");
         },
+        currentEventTagMode: function () {
+            return ((this.tagBulkMode) ? 'master' : 'event')
+        }
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
@@ -71,6 +76,7 @@ var app = new Vue({
     watch: {
         workbook: 'init',
         characterSelected: 'update',
+        tagBulkMode: 'changeTagBulkMode',
     },
     methods: {
         // Utils
@@ -145,6 +151,12 @@ var app = new Vue({
         },
         isInvalidDate(date) { // 無効な日付かどうかをチェック
             return Number.isNaN(date.getDate());
+        },
+        formatTag(tagStr) {
+            return (tagStr == "") ? [] : tagStr.replace(/\s+/g, "").split("#").filter(t => t != "");
+        },
+        isSameDate(date1, date2) {
+            return (date1.getDate() == date2.getDate()) && (date1.getMonth() == date2.getMonth());
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -252,6 +264,13 @@ var app = new Vue({
                 return '';
             };
         },
+        returnTagTextStyle(category) { // タグテキスト色用cssを返却
+            if (category in this.data.settings.category) {
+                return '';
+            } else {
+                return 'color: #BDBDBD !important;';
+            };
+        },
         returnCardClass(index, events) { // rowにあるカードの数に応じてマージン設定クラスを返す
             const numEvents = events.length;
             if (numEvents == 0 || index == numEvents - 1) {
@@ -296,6 +315,8 @@ var app = new Vue({
                     continue;
                 };
                 const characterName = String(row[colNames["name"]]);
+                const tagStr = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
+                const tags = this.formatTag(tagStr);
                 let result = {
                     "category": String(row[colNames["category"]]),
                     "birthday": this.resetDateFromLimit(this.formatDate(row[colNames["birthday"]]), "hour"),
@@ -304,6 +325,7 @@ var app = new Vue({
                     "deathdayDetail": (colNames["deathdayDetail"] in row) ? String(row[colNames["deathdayDetail"]]) : "",
                     "autoBirth": (colNames["autoBirth"] in row) ? row[colNames["autoBirth"]] : false,
                     "school": null,
+                    "tags": tags,
                 };
                 if (this.isInvalidDate(result.birthday)) {
                     this.state.message.push(`キャラクター${characterName}に設定された誕生日が不正です`);
@@ -313,6 +335,7 @@ var app = new Vue({
                 this.data.settings.character[characterName] = result;
                 this.data.periodEvent.events[characterName] = [];
                 this.data.settings.category[result.category].characters.push(characterName);
+                this.data.tags.character = this.data.tags.character.concat(tags);
             };
         },
         createCharacterSchoolInfo() { // 教育課程設定を作成
@@ -474,6 +497,7 @@ var app = new Vue({
                 res.display = (colNames["display"] in row) ? String(row[colNames["display"]]) : "day";
                 res.startDetail = (colNames["startDetail"] in row) ? String(row[colNames["startDetail"]]) : "";
                 res.endDetail = (colNames["endDetail"] in row) ? String(row[colNames["endDetail"]]) : "";
+                res.tags = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
                 if (this.isInvalidDate(res.startDate) || this.isInvalidDate(res.endDate)) {
                     this.state.message.push(`期間イベント「 ${res.title} 」に設定された期間が不正です`);
                     continue;
@@ -493,6 +517,8 @@ var app = new Vue({
                 endMarker[eventColNames["detail"]] = res.endDetail;
                 startMarker[eventColNames["beforeAfter"]] = "期間";
                 endMarker[eventColNames["beforeAfter"]] = "期間";
+                startMarker[eventColNames["tag"]] = res.tags;
+                endMarker[eventColNames["tag"]] = res.tags;
                 this.data.periodEvent.markers.push(startMarker);
                 this.data.periodEvent.markers.push(endMarker);
                 // イベントをキャラクターごとに作成
@@ -523,6 +549,9 @@ var app = new Vue({
                 const beforeAfter = (beforeAfterOriginal in bfKeyDict) ? beforeAfterOriginal : "";
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
+                const tagStr = (colNames["tag"] in data[i]) ? String(data[i][colNames["tag"]]) : "";
+                const tags = this.formatTag(tagStr);
+                this.data.tags.event = this.data.tags.event.concat(tags);
                 // 対象キャラクタデータを作成
                 let characters = [];
                 let eventCategory = "";
@@ -548,6 +577,7 @@ var app = new Vue({
                         "beforeAfter": beforeAfter,
                         "characters": [],
                         "events": { "all": [], "category": [], "character": [] },
+                        "tags": [],
                     };
                 };
                 const row = {
@@ -555,9 +585,11 @@ var app = new Vue({
                     "category": category,
                     "characters": characters,
                     "detail": detail,
+                    "tags": tags,
                 };
                 this.data.event[key].events[eventCategory].push(row);
                 this.data.event[key].characters = this.union(characters, this.data.event[key].characters);
+                this.data.event[key].tags = this.union(tags, this.data.event[key].tags);
             };
             // 時系列Keyデータを作成
             const keys = Object.keys(this.data.event);
@@ -589,6 +621,7 @@ var app = new Vue({
                         "characters": [characterName],
                         "numEvents": { "all": 0, "category": 0, "character": 0 },
                         "detail": "",
+                        "tags": [],
                     }];
                     yearSummary[year][`${characterName}_tl`] = {
                         "name": characterName,
@@ -604,6 +637,11 @@ var app = new Vue({
             };
             this.yearSummary = yearSummary;
         },
+        setTags() { // タグから重複を排除
+            this.data.tags.character = Array.from(new Set(this.data.tags.character));
+                this.data.tags.event = Array.from(new Set(this.data.tags.event));
+                this.data.tags.master = Array.from(new Set(this.data.tags.character.concat(this.data.tags.event)));
+        },
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
                 await this.createCategory();
@@ -612,6 +650,7 @@ var app = new Vue({
                 await this.createPeriodEvent();
                 await this.createEvent();
                 await this.createYearSummary();
+                this.setTags();
             };
             if (this.state.message.length != 0) {
                 this.state.errorSnack = true;
@@ -625,7 +664,9 @@ var app = new Vue({
             this.eventKeys.forEach(function (key) {
                 const date = vm.data.event[key].date;
                 const year = date.getFullYear();
+                const tags = vm.data.event[key].tags;
                 const eventData = vm.data.event[key].events;
+                const displayLimit = vm.defaults.displayLimit[vm.data.event[key].limit];
                 if (currentYear != year) {
                     data.push(vm.yearSummary[currentYear]);
                     currentYear = year;
@@ -635,12 +676,13 @@ var app = new Vue({
                     "year": date.getFullYear(),
                     "date": date,
                     "characters": [],
-                    "displayLimit": vm.defaults.displayLimit[vm.data.event[key].limit],
+                    "displayLimit": displayLimit,
                     "show": true,
                     "isFirstEvent": true,
                     "beforeAfter": vm.data.event[key].beforeAfter,
                     "summary": false,
                     "height": "0px",
+                    "tags": tags,
                 };
                 for (const [key, category] of Object.entries(vm.data.settings.category)) {
                     const characters = category.characters;
@@ -668,7 +710,10 @@ var app = new Vue({
                         eventData[categoryName].forEach(function (event) {
                             row.characters = vm.union(row.characters, event.characters);
                             for (const characterName of event.characters) {
-                                row[`${characterName}_ev`].push(event);
+                                const characterBirthday = vm.data.settings.character[characterName].birthday;
+                                let tmp_ev = _.clone(event);
+                                tmp_ev["birthday"] = vm.isSameDate(characterBirthday, date) && (displayLimit >= 2);
+                                row[`${characterName}_ev`].push(tmp_ev);
                                 vm.yearSummary[year][`${characterName}_ev`][0]["numEvents"][categoryName] += 1;
                             };
                         });
@@ -690,13 +735,32 @@ var app = new Vue({
                 characters.forEach(function (character) {
                     if (vm.characterSelected.indexOf(character) != -1) {
                         headers.push({ text: '', value: `${character}_tl`, class:["table-timeline-header", "border-none"], cellClass: ["pa-0", "table-timeline-cell", "valign-top"], width: "0%", });
-                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4", "valign-top"] });
+                        headers.push({ text: character, value: `${character}_ev`, width: `${width}%`, class: ["border-none"], cellClass: ["pl-2", "pr-4", "valign-top"], tags: vm.data.settings.character[character].tags});
                     };
                 });
             };
             this.timelineHeaders = headers;
         },
-        updateTimelineData() { // characterSelectedの更新に合わせてshowの状態を更新
+        isEventTagsMatch2Row(mode, row) {
+            // 処理スキップ
+            if (row.summary == true) { return true; } // サマリー行の場合はreturn
+            if (!this.tagBulkMode) {
+                if (mode === null) { return true; }; // タグ変更なしの場合はreturn
+                if (Array.isArray(mode)) { return true; } // キャラクター選択変更時はreturn
+            };
+            mode = (mode === null || Array.isArray(mode) || this.tagBulkMode) ? "master" : mode;
+            // タグマッチ判定
+            const targetTags = this.tagSelected[mode];
+            if (targetTags.length === 0) { return true; }; // タグが選択されていない場合はreturn
+            return this.intersection(targetTags, row.tags).length > 0;
+        },
+        isEventTagsMatch2Card(summary, tags) {
+            if (summary) return true;
+            const currentTag = (this.tagBulkMode) ? this.tagSelected["master"] : this.tagSelected["event"];
+            if (currentTag.length == 0) return true;
+            return (this.intersection(currentTag, tags).length == 0) ? false : true;
+        },
+        updateTimelineData(mode=null) { // characterSelectedの更新に合わせてshowの状態を更新
             let currentAge = {};
             let currentState = {};
             this.colsTL.forEach(function (colName) {
@@ -708,7 +772,7 @@ var app = new Vue({
                 const row = this.timelineData[index];
                 row.height = "0px";
                 // 列がshow状態かどうかを判断
-                if ((this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize)) {
+                if ((this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize) && this.isEventTagsMatch2Row(mode, row)) {
                     row.show = true;
                     // Year列の表示状態変更
                     if (currentYear != row.year) {
@@ -760,16 +824,16 @@ var app = new Vue({
                 });
                 await this.createTimelineData();
                 this.updateYearSummary();
-                await this.updateTimelineData();
+                await this.updateTimelineData(null);
                 this.state.loading = false;
                 this.state.ready = true;
             } else {
                 this.state.loading = "error";
             };
         },
-        async update() { // 表示キャラクター変更時にデータリセットとスタイリングを行う
+        async update(mode = null) { // 表示キャラクター変更時にデータリセットとスタイリングを行う
             await this.createTimelineColumns();
-            await this.updateTimelineData();
+            await this.updateTimelineData(mode);
             await this.setArrorFirstDied();
             this.$nextTick(function () { // DOM更新後に処理
                 this.setInnerTdHeight();
@@ -800,6 +864,60 @@ var app = new Vue({
                     vm.characterSelected.splice(index, 1);
                 };
             });
+        },
+        changeCharacterSelected(tags) { // 現在のタグ選択状態に合わせてキャラクター表示状態を更新
+            if (tags.length == 0) { // タグ選択が全解除状態の場合は全キャラクターを選択状態に戻す
+                this.characterSelected = [...this.data.characters];
+                return;
+            };
+            // 通常選択時
+            const characters = this.data.settings.character;
+            let characterSelected = [];
+            for (const [characterName, characterData] of Object.entries(characters)) {
+                const isTargetCharacter = this.intersection(tags, characterData.tags).length > 0;
+                if (isTargetCharacter) {
+                    characterSelected.push(characterName);
+                };
+            };
+            this.characterSelected = Array.from(new Set(characterSelected));
+        },
+        changeTagState(mode) { // タグ選択状態の変更に合わせて更新
+            const targetTags = this.tagSelected[mode];
+            if (mode == "character" || mode == "master") {
+                this.changeCharacterSelected(targetTags);
+            };
+            if (mode == "event" || mode == "master") {
+                this.update(mode);
+            };
+        },
+        selectAllTags(mode) { // タグをすべて選択する
+            const vm = this;
+            const tags = this.data.tags[mode];
+            tags.forEach(function (tag) {
+                if (vm.tagSelected[mode].indexOf(tag) == -1) {
+                    vm.tagSelected[mode].push(tag);
+                };
+            });
+            this.changeTagState(mode);
+        },
+        removeAllTags(mode) { // タグをすべて選択解除する
+            const vm = this;
+            const tags = this.data.tags[mode];
+            tags.forEach(function (tag) {
+                const index = vm.tagSelected[mode].indexOf(tag);
+                if (index != -1) {
+                    vm.tagSelected[mode].splice(index, 1);
+                };
+            });
+            this.changeTagState(mode);
+        },
+        changeTagBulkMode() {
+            if (this.tagBulkMode) {
+                this.changeTagState("master");
+            } else {
+                this.changeTagState("character");
+                this.changeTagState("event");
+            };
         },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
