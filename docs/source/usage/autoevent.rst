@@ -53,6 +53,7 @@
     ":ref:`limit`", ":doc:`../data/periodEvent` で設定された以下を無視"
     ":ref:`beforeAfter`", "``期間``"
     ":ref:`detail`", ":doc:`../data/periodEvent` で設定された開始時詳細"
+    ":ref:`tagEVPeriod`", ":doc:`../data/periodEvent` で設定されたタグ"
 
 .. _periodEndEvent:
 
@@ -69,6 +70,7 @@
     ":ref:`limit`", ":doc:`../data/periodEvent` で設定された以下を無視"
     ":ref:`beforeAfter`", "``期間``"
     ":ref:`detail`", ":doc:`../data/periodEvent` で設定された終了時詳細"
+    ":ref:`tagEVPeriod`", ":doc:`../data/periodEvent` で設定されたタグ"
 
 
 5. サマリー

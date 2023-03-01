@@ -4,13 +4,16 @@
    contain the root `toctree` directive.
 
 ========================================
-Chronicliner v2.0.0
+Chronicliner v2.1.0
 ========================================
 
 .. image:: ./img/usage_timeline.png
    :alt: Chronicliner Application Image
 
 Chroniclinerは、キャラの年齢やら学年やら時系列がわからなくなった限界同人オタク&クリエイターのために作成された年表ツールです。
+
+.. warning::
+    ver2.1.0より前のExcelファイルを使用する場合、 ``キャラクター`` 、 ``イベント`` 、 ``期間イベント`` シートに ``タグ`` 列を追加してください。
 
 Licence
 ================================================================
@@ -19,7 +22,7 @@ MITライセンスです。
 + 同人・商用等での利用及び改変、改変物の配布が可能です
 + 但し、このリソースを使用したことによる責任の一切を負いかねます
 
-Copyright (c) 2022 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
+Copyright (c) 2022-2023 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
 
 .. _contact:
 
