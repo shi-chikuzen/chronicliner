@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ========================================
-Chronicliner v2.1.0
+Chronicliner v2.2.0
 ========================================
 
 .. image:: ./img/usage_timeline.png
