@@ -51,10 +51,17 @@
                         v-show="this.state.ready"
                         v-if="this.fileSelected != null"
                         :color="this.state.fileError? 'error' : 'success'"
+                        class="mr-1"
                         outlined>
                             {{this.fileSelected.name}}
                         </v-chip>
                     </v-expand-x-transition>
+                    <!-- ハイライトモード -->
+                    <v-btn icon @click="changeHighlightState()">
+                        <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
+                        <v-icon v-else>mdi-star-outline</v-icon>
+                    </v-btn>
+                    <!-- ヘルプ -->
                     <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank" rel="noopener noreferrer">
                         <v-btn icon>
                             <v-icon>
@@ -315,13 +322,13 @@
                                                                         v-for="(event, index) in item[column.value]"
                                                                         v-show="isEventTagsMatch2Card(item.summary, event.tags)"
                                                                         :color="returnCardColor(event.category)"
-                                                                        :class="returnCardClass(index, item[column.value])"
+                                                                        :class="returnCardClass(index, item[column.value], event)"
                                                                         outlined>
                                                                             <v-tooltip bottom
                                                                             :color="(event.detail === '') ? 'rgba(0, 0, 0, 0)' : ''">
                                                                                 <template v-slot:activator="{ on, attrs }">
                                                                                     <v-card-text
-                                                                                    v-bind:class="returnCardTextClass(event.category)"
+                                                                                    v-bind:class="returnCardTextClass(event)"
                                                                                     class="pa-2"
                                                                                     v-bind="attrs"
                                                                                     v-on="on">
@@ -350,10 +357,15 @@
                                                                                                 <div class="text-center"
                                                                                                 v-text="event.title" style="white-space: pre-line;">
                                                                                                 </div>
-                                                                                                <div v-if="event.tags.length > 0 || event.birthday" class="d-flex flex-wrap flex-grow-1" style="width: 100%;">
-                                                                                                    <div v-if="event.birthday">
-                                                                                                        <v-icon size="small">
+                                                                                                <div v-if="event.tags.length > 0 || event.birthday || event.important" class="d-flex flex-wrap flex-grow-1 align-center" style="width: 100%;">
+                                                                                                    <div v-if="event.birthday" class="d-flex align-center">
+                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event)">
                                                                                                             mdi-cake
+                                                                                                        </v-icon>
+                                                                                                    </div>
+                                                                                                    <div v-if="event.important" class="d-flex align-center">
+                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event)">
+                                                                                                            mdi-star
                                                                                                         </v-icon>
                                                                                                     </div>
                                                                                                     <div v-for="tag in event.tags" class="mr-1 text-caption" :style="returnTagTextStyle(event.category)">
@@ -366,6 +378,10 @@
                                                                                 </template>
                                                                                 <span v-if="event.detail != ''" v-text="event.detail" style="white-space: pre-line;"></span>
                                                                             </v-tooltip>
+                                                                            <v-fade-transition>
+                                                                                <v-overlay v-if="state.highlightMode & !event.important" color="#FFFFFF" z-index="1" opacity="0.55" absolute>
+                                                                                </v-overlay>
+                                                                            </v-fade-transition>
                                                                         </v-card>
                                                                     </v-col>
                                                                 </v-row>

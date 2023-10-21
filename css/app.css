@@ -54,3 +54,11 @@ tbody > tr:hover {
   border-top: thin solid rgb(229, 229, 229) !important;
   border-bottom: thin none rgba(0, 0, 0, 0) !important;
 }
+
+.text-disabled{
+  opacity: 0.33;
+}
+
+.v-card {
+  background-clip: padding-box;
+}
