@@ -29,8 +29,8 @@ var app = new Vue({
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
                 "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算", "tag": "タグ" },
                 "school": { "characterName": "キャラクタ名", "name": "教育課程名", "period": "基準所属年数", "startDate": "起算日", "age": "開始年齢", "enterGrade": "編入学年", "enterDate": "編入日", "autoBirth": "誕生年自動計算に使用", "autoYear": "誕生年起算年", "autoGrade": "誕生年起算学年" },
-                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細", "tag": "タグ" },
-                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細", "tag": "タグ" },
+                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細", "tag": "タグ", "important": "重要イベント" },
+                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細", "tag": "タグ", "important": "重要イベント" },
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
             "displayTime": { "year": "年", "month": "ヶ月", "day": "日", "hour": "時間", "minute": "分", "second": "秒" },
@@ -498,6 +498,7 @@ var app = new Vue({
                 res.startDetail = (colNames["startDetail"] in row) ? String(row[colNames["startDetail"]]) : "";
                 res.endDetail = (colNames["endDetail"] in row) ? String(row[colNames["endDetail"]]) : "";
                 res.tags = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
+                res.important = (colNames["important"] in row) ? row[colNames["important"]] : false;
                 if (this.isInvalidDate(res.startDate) || this.isInvalidDate(res.endDate)) {
                     this.state.message.push(`期間イベント「 ${res.title} 」に設定された期間が不正です`);
                     continue;
@@ -519,6 +520,8 @@ var app = new Vue({
                 endMarker[eventColNames["beforeAfter"]] = "期間";
                 startMarker[eventColNames["tag"]] = res.tags;
                 endMarker[eventColNames["tag"]] = res.tags;
+                startMarker[eventColNames["important"]] = res.important;
+                endMarker[eventColNames["important"]] = res.important;
                 this.data.periodEvent.markers.push(startMarker);
                 this.data.periodEvent.markers.push(endMarker);
                 // イベントをキャラクターごとに作成
@@ -551,6 +554,7 @@ var app = new Vue({
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
                 const tagStr = (colNames["tag"] in data[i]) ? String(data[i][colNames["tag"]]) : "";
                 const tags = this.formatTag(tagStr);
+                const important = (colNames["important"] in data[i]) ? data[i][colNames["important"]] : false;
                 this.data.tags.event = this.data.tags.event.concat(tags);
                 // 対象キャラクタデータを作成
                 let characters = [];
@@ -586,6 +590,7 @@ var app = new Vue({
                     "characters": characters,
                     "detail": detail,
                     "tags": tags,
+                    "important": important,
                 };
                 this.data.event[key].events[eventCategory].push(row);
                 this.data.event[key].characters = this.union(characters, this.data.event[key].characters);
