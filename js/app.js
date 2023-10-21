@@ -257,15 +257,14 @@ var app = new Vue({
                 return this.defaults.backgroundColor;
             };
         },
-        returnCardTextClass(category) { // カードの表示モードを返却
-            if (category in this.data.settings.category) {
-                return 'white--text';
-            } else {
-                return '';
-            };
+        returnCardTextClass(event) { // カードの表示モードを返却
+            let classes = [];
+            if (event.category in this.data.settings.category) { classes.push("white--text") }
+            if (this.state.highlightMode & !event.important & !(event.category in this.data.settings.category)) { classes.push("text-disabled") }
+            return classes.join(" ");
         },
-        returnCardIconColor(category) { // カードのアイコンに適用する色を返却
-            if (category in this.data.settings.category) {
+        returnCardIconColor(event) { // カードのアイコンに適用する色を返却
+            if (event.category in this.data.settings.category) {
                 return 'white';
             } else {
                 return '';
@@ -278,13 +277,16 @@ var app = new Vue({
                 return 'color: #BDBDBD !important;';
             };
         },
-        returnCardClass(index, events) { // rowにあるカードの数に応じてマージン設定クラスを返す
+        returnCardClass(index, events, event) { // rowにあるカードの数に応じてマージン設定クラスを返す
+            let tags = [];
             const numEvents = events.length;
             if (numEvents == 0 || index == numEvents - 1) {
-                return "my-2";
+                tags.push("my-2");
             } else {
-                return "mb-4 mt-2";
+                tags.push("mb-4 mt-2");
             };
+            if (!event.important & this.state.highlightMode & event.category in this.data.settings.category) { tags.push("border-none") }
+            return tags.join(' ');
         },
         returnTdClass(item, column) { // tdに付与するクラスを返却
             const cellClass = _.cloneDeep(column.cellClass);

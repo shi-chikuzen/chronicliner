@@ -322,13 +322,13 @@
                                                                         v-for="(event, index) in item[column.value]"
                                                                         v-show="isEventTagsMatch2Card(item.summary, event.tags)"
                                                                         :color="returnCardColor(event.category)"
-                                                                        :class="returnCardClass(index, item[column.value])"
+                                                                        :class="returnCardClass(index, item[column.value], event)"
                                                                         outlined>
                                                                             <v-tooltip bottom
                                                                             :color="(event.detail === '') ? 'rgba(0, 0, 0, 0)' : ''">
                                                                                 <template v-slot:activator="{ on, attrs }">
                                                                                     <v-card-text
-                                                                                    v-bind:class="returnCardTextClass(event.category)"
+                                                                                    v-bind:class="returnCardTextClass(event)"
                                                                                     class="pa-2"
                                                                                     v-bind="attrs"
                                                                                     v-on="on">
@@ -359,12 +359,12 @@
                                                                                                 </div>
                                                                                                 <div v-if="event.tags.length > 0 || event.birthday || event.important" class="d-flex flex-wrap flex-grow-1 align-center" style="width: 100%;">
                                                                                                     <div v-if="event.birthday" class="d-flex align-center">
-                                                                                                        <v-icon size="small" class="mr-1">
+                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event)">
                                                                                                             mdi-cake
                                                                                                         </v-icon>
                                                                                                     </div>
                                                                                                     <div v-if="event.important" class="d-flex align-center">
-                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event.category)">
+                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event)">
                                                                                                             mdi-star
                                                                                                         </v-icon>
                                                                                                     </div>
@@ -378,6 +378,10 @@
                                                                                 </template>
                                                                                 <span v-if="event.detail != ''" v-text="event.detail" style="white-space: pre-line;"></span>
                                                                             </v-tooltip>
+                                                                            <v-fade-transition>
+                                                                                <v-overlay v-if="state.highlightMode & !event.important" color="#FFFFFF" z-index="1" opacity="0.55" absolute>
+                                                                                </v-overlay>
+                                                                            </v-fade-transition>
                                                                         </v-card>
                                                                     </v-col>
                                                                 </v-row>
