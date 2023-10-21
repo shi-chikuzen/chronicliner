@@ -21,7 +21,7 @@ var app = new Vue({
     data: {
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false },
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode:false, },
         defaults: {
             "color": ["#47cacc", "#63bcc9", "#cdb3d4", "#e7b7c8", "#ffbe88"],
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント", "periodEvent": "期間イベント" },
@@ -930,6 +930,9 @@ var app = new Vue({
                 this.changeTagState("character");
                 this.changeTagState("event");
             };
+        },
+        changeHighlightState() {
+            this.state.highlightMode = !this.state.highlightMode;
         },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する

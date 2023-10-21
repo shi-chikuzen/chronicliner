@@ -51,10 +51,17 @@
                         v-show="this.state.ready"
                         v-if="this.fileSelected != null"
                         :color="this.state.fileError? 'error' : 'success'"
+                        class="mr-1"
                         outlined>
                             {{this.fileSelected.name}}
                         </v-chip>
                     </v-expand-x-transition>
+                    <!-- ハイライトモード -->
+                    <v-btn icon @click="changeHighlightState()">
+                        <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
+                        <v-icon v-else>mdi-star-outline</v-icon>
+                    </v-btn>
+                    <!-- ヘルプ -->
                     <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank" rel="noopener noreferrer">
                         <v-btn icon>
                             <v-icon>
