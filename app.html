@@ -350,10 +350,15 @@
                                                                                                 <div class="text-center"
                                                                                                 v-text="event.title" style="white-space: pre-line;">
                                                                                                 </div>
-                                                                                                <div v-if="event.tags.length > 0 || event.birthday" class="d-flex flex-wrap flex-grow-1" style="width: 100%;">
-                                                                                                    <div v-if="event.birthday">
-                                                                                                        <v-icon size="small">
+                                                                                                <div v-if="event.tags.length > 0 || event.birthday || event.important" class="d-flex flex-wrap flex-grow-1 align-center" style="width: 100%;">
+                                                                                                    <div v-if="event.birthday" class="d-flex align-center">
+                                                                                                        <v-icon size="small" class="mr-1">
                                                                                                             mdi-cake
+                                                                                                        </v-icon>
+                                                                                                    </div>
+                                                                                                    <div v-if="event.important" class="d-flex align-center">
+                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event.category)">
+                                                                                                            mdi-star
                                                                                                         </v-icon>
                                                                                                     </div>
                                                                                                     <div v-for="tag in event.tags" class="mr-1 text-caption" :style="returnTagTextStyle(event.category)">

@@ -264,6 +264,13 @@ var app = new Vue({
                 return '';
             };
         },
+        returnCardIconColor(category) { // カードのアイコンに適用する色を返却
+            if (category in this.data.settings.category) {
+                return 'white';
+            } else {
+                return '';
+            };
+        },
         returnTagTextStyle(category) { // タグテキスト色用cssを返却
             if (category in this.data.settings.category) {
                 return '';
