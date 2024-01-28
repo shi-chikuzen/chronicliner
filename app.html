@@ -61,6 +61,11 @@
                         <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
                         <v-icon v-else>mdi-star-outline</v-icon>
                     </v-btn>
+                    <!-- 設定ボタン -->
+                    <v-btn icon @click="changeShowDisplaySettingState()">
+                        <v-icon v-if="this.state.showDisplaySetting">mdi-cog</v-icon>
+                        <v-icon v-else>mdi-cog-outline</v-icon>
+                    </v-btn>
                     <!-- ヘルプ -->
                     <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank" rel="noopener noreferrer">
                         <v-btn icon>
@@ -72,6 +77,46 @@
                 </v-app-bar>
                 <!-- Contents -->
                 <v-main id="main">
+                    <v-snackbar
+                    id="displaySettingSnackbarParent"
+                    v-model="this.state.showDisplaySetting"
+                    timeout="-1">
+                        <v-form>
+                            <v-row>
+                                <v-col cols="12">
+                                    <span>表示設定</span>
+                                </v-col>
+                                <v-col cols="12">
+                                    <p class="text-caption">UI表示設定</p>
+                                    <v-switch
+                                    v-model="displaySetting.showAccordion"
+                                    :label="showAccordionSwicherLabel"
+                                    :disabled="!state.ready"
+                                    color="primary"
+                                    hide-details
+                                    inset></v-switch>
+                                </v-col>
+                                <v-col cols="12">
+                                    <p class="text-caption">表示領域設定</p>
+                                    <v-range-slider
+                                    v-model="displaySetting.yearRange.value"
+                                    :min="displaySetting.yearRange.min"
+                                    :max="displaySetting.yearRange.max"
+                                    :disabled="!state.ready"
+                                    step="1"
+                                    color="primary"
+                                    strict>
+                                        <template v-slot:prepend>
+                                            <span class="text-caption">{{displaySetting.yearRange.value[0]}}</span>
+                                        </template>
+                                        <template v-slot:append>
+                                            <span class="text-caption">{{displaySetting.yearRange.value[1]}}</span>
+                                        </template>
+                                    </v-range-slider>
+                                </v-col>
+                            </v-row>
+                        </v-form>
+                    </v-snackbar>
                     <v-container fluid>
                         <v-row class="px-3">
                             <!-- Select Field -->

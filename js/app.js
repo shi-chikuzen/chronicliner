@@ -21,7 +21,11 @@ var app = new Vue({
     data: {
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode:false, },
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, },
+        displaySetting: {
+            showAccordion: true,
+            yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},
+        },
         defaults: {
             "color": ["#47cacc", "#63bcc9", "#cdb3d4", "#e7b7c8", "#ffbe88"],
             "sheetNames": { "category": "カテゴリー", "character": "キャラクター", "school": "教育課程", "event": "イベント", "periodEvent": "期間イベント" },
@@ -61,13 +65,18 @@ var app = new Vue({
         },
         currentEventTagMode: function () {
             return ((this.tagBulkMode) ? 'master' : 'event')
-        }
+        },
+        showAccordionSwicherLabel: function () {
+            return ((this.displaySetting.showAccordion)? "アコーディオン表示　" : "アコーディオン非表示")
+        },
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
         window.addEventListener("resize", this.windowResized);
         this.$nextTick(function () {
             this.setTableHeight();
+            this.replaceDisplaySettingSnackbar();
+            this.state.showDisplaySetting = false;
         });
     },
     beforeDestroy: function () {
@@ -936,6 +945,9 @@ var app = new Vue({
         changeHighlightState() {
             this.state.highlightMode = !this.state.highlightMode;
         },
+        changeShowDisplaySettingState() {
+            this.state.showDisplaySetting = !this.state.showDisplaySetting;
+        },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する
             const windowHeight = window.innerHeight;
@@ -958,6 +970,15 @@ var app = new Vue({
             trs.forEach(function (tr, index) {
                 vm.timelineData[index].height = String(tr.clientHeight) + "px";
             });
+        },
+        replaceDisplaySettingSnackbar() { // DisplaySettingのSnackbar表示位置を強制的に変更する
+            const displaySettingSnackbarParent = document.querySelector("#displaySettingSnackbarParent");
+            const displaySettingSnackbar = displaySettingSnackbarParent.children[0];
+            const header_end = document.querySelector("header").getBoundingClientRect().bottom;
+            displaySettingSnackbarParent.style.justifyContent = "right";
+            displaySettingSnackbarParent.style.alignItems = "flex-start";
+            displaySettingSnackbar.style.marginTop = String(header_end + 12) + "px";
+            displaySettingSnackbar.style.marginRight = "20px"
         },
     },
 });
