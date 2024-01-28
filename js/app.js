@@ -24,7 +24,6 @@ var app = new Vue({
         state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, },
         displaySetting: {
             showAccordion: true,
-            showAccordionShowFlag: true,
             yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},
         },
         defaults: {
