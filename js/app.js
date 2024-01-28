@@ -24,6 +24,7 @@ var app = new Vue({
         state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, },
         displaySetting: {
             showAccordion: true,
+            showAccordionShowFlag: true,
             yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},
         },
         defaults: {
@@ -979,6 +980,16 @@ var app = new Vue({
             displaySettingSnackbarParent.style.alignItems = "flex-start";
             displaySettingSnackbar.style.marginTop = String(header_end + 12) + "px";
             displaySettingSnackbar.style.marginRight = "20px"
+        },
+        changeAccordionDisplayState() {
+            const vm = this;
+            const accordions = document.querySelectorAll(".accordionParent");
+            accordions.forEach(function (accordion, index, array) {
+                accordion.style.display = (vm.displaySetting.showAccordion)? "":"none";
+            });
+            this.$nextTick(function () { // DOM更新後に処理
+                this.setTableHeight();
+            });
         },
     },
 });
