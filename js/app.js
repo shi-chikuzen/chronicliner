@@ -21,7 +21,7 @@ var app = new Vue({
     data: {
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, },
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false},
         displaySetting: {
             showAccordion: true,
             yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},
@@ -51,6 +51,7 @@ var app = new Vue({
         timelineHeaders: [],
         timelineData: [],
         yearSummary: {},
+        yearRangeSummary: {"head": {}, "tail":{}},
         tableHeight: 0,
     },
     computed: {
@@ -69,6 +70,9 @@ var app = new Vue({
         showAccordionSwicherLabel: function () {
             return ((this.displaySetting.showAccordion)? "アコーディオン表示　" : "アコーディオン非表示")
         },
+        numRows: function () {
+            return this.timelineData.filter((row) => row.show).length;
+        }
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
@@ -111,6 +115,10 @@ var app = new Vue({
             const x = new Set(array1);
             const y = new Set(array2);
             return Array.from(new Set([...x].filter(e => (y.has(e)))));
+        },
+        range(start, end) { // Python range
+            const result = [...Array((end - start) + 1)].map((_, i) => start + i);
+            return result;
         },
         convertSerial2Date(serial) { // エクセルのシリアル値をDateに変換する
             const coef = 24 * 60 * 60 * 1000;
@@ -166,6 +174,10 @@ var app = new Vue({
         },
         isSameDate(date1, date2) {
             return (date1.getDate() == date2.getDate()) && (date1.getMonth() == date2.getMonth());
+        },
+        getRowIndex(row) {
+            const rowDisplayed = this.timelineData.filter((row) => row.show);
+            return rowDisplayed.indexOf(row);
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -239,6 +251,12 @@ var app = new Vue({
             const years = Math.floor((end.getTime() - start.getTime()) / (365 * 24 * 60 * 60 * 1000));
             return years;
         },
+        getAgeSerial(name, date) { // 該当dateでの年齢をシリアル値で返す
+            if (date === undefined) return -1;
+            const character = this.data.settings.character[name];
+            const passed = this.resetDateFromLimit(date, "hour").getTime() - this.resetDateFromLimit(character.birthday, "hour").getTime();
+            return passed;
+        },
         getCharacterPeriodEvents(name, date) { // 指定キャラクターの該当DateのperiodEventを返す
             const events = this.data.periodEvent.events[name];
             return events.filter(event => this.isWithin(date, event.startDate, event.endDate));
@@ -254,6 +272,30 @@ var app = new Vue({
         },
         isCharacterDied(character, date) { // 該当日に該当キャラクターが死んでいるかを返す
             return !this.isWithin(date, date, character.death);
+        },
+        isFirstYearAfterDied(row, data) { // キャラクター死亡後の初表示行かを返す
+            // default val of default row
+            const flagFirstAfterDied = data.firstAfterDied;
+            if (flagFirstAfterDied) return true;
+
+            const character = this.data.settings.character[data.name];
+            if (character.death === null) return false;
+
+            // 表示制限時の先頭行
+            const isHead = Object.is(row, this.yearRangeSummary.head);
+            if (isHead) return false;
+
+            // 表示制限時の最終行
+            const isTail = Object.is(row, this.yearRangeSummary.tail);
+            if (isTail) {
+                const rowDisplayed = this.timelineData.filter((row) => row.show);
+                const prevRowDisplayed = rowDisplayed.slice(-2)[0];
+                const isAliveInPrevRow = (this.getAgeSerial(data.name, prevRowDisplayed.date) > 0) && !this.isCharacterDied(character, prevRowDisplayed.date);
+                const isDiedNow = this.isCharacterDied(character, row.date);
+                return isAliveInPrevRow && isDiedNow;
+            };
+
+            return false;
         },
         returnCardColor(category) { // カードの色を返却
             if (category == "all") {
@@ -308,8 +350,23 @@ var app = new Vue({
         },
         returnTimelineColorStyle(item, column) { // タイムライン列の背景色を返却
             const data = item[column.value];
-            if (data.age < 0 || data.died == true) return `background-color: ${this.defaults.backgroundColor};`;
+            const passed = this.getAgeSerial(data.name, item.date);
+            if (passed < 0 || data.died == true) return `background-color: ${this.defaults.backgroundColor};`;
             return `background-color: ${data.color};`;
+        },
+        displayNofillArrow(row, data) {
+            const isHead = Object.is(row, this.yearRangeSummary.head);
+            if (isHead) return false;
+            const isTail = Object.is(row, this.yearRangeSummary.tail);
+            if (isTail) {
+                const character = this.data.settings.character[data.name];
+                const isBornBetweenDisplayRange = this.isBetween(character.birthday.getFullYear(), this.displaySetting.yearRange.value[1], this.displaySetting.yearRange.max);
+                if (isBornBetweenDisplayRange) return false;
+                const isBornBetweenHideRange = character.birthday.year >= this.displaySetting.yearRange.value[1] + 1;
+                if (isBornBetweenHideRange) return true;
+            };
+            const timePassed = this.getAgeSerial(data.name, row.date);
+            return timePassed > 0;
         },
         // Create Base Data
         createCategory() { // カテゴリ設定を読み込んでフォーマット
@@ -632,6 +689,7 @@ var app = new Vue({
                     "show": false,
                     "isFirstEvent": true,
                     "summary": true,
+                    "yearRangeSummary": false,
                     "height": "0px",
                     "summarize": false,
                 };
@@ -660,10 +718,58 @@ var app = new Vue({
             };
             this.yearSummary = yearSummary;
         },
+        createYearRangeSummary() { // 年範囲のサマリーデータをフォーマットする
+            let yearRangeSummary = {};
+            for (const key of Object.keys(this.yearRangeSummary)) {
+                let row = {
+                    "year": null,
+                    "date": new Date(2000, 1, 1),
+                    "characters": [],
+                    "displayLimit": this.defaults.displayLimit["second"],
+                    "show": false,
+                    "isFirstEvent": true,
+                    "summary": true,
+                    "yearRangeSummary": true,
+                    "height": "0px",
+                    "summarize": false,
+                    "start": 0,
+                    "end": 0,
+                };
+                for (const characterName of this.data.characters) {
+                    const character = this.data.settings.character[characterName];
+                    row[`${characterName}_ev`] = [{
+                        "title": "",
+                        "category": "summary",
+                        "characters": [characterName],
+                        "numEvents": { "all": 0, "category": 0, "character": 0 },
+                        "detail": "",
+                        "tags": [],
+                    }];
+                    row[`${characterName}_tl`] = {
+                        "name": characterName,
+                        "age": -1,
+                        "school": {},
+                        "color": this.data.settings.category[character.category].color,
+                        "needsArrow": true,
+                        "summary": true,
+                        "died": false,
+                        "firstAfterDied": false,
+                    };
+                };
+                yearRangeSummary[key] = row;
+            };
+            this.yearRangeSummary = yearRangeSummary;
+        },
         setTags() { // タグから重複を排除
             this.data.tags.character = Array.from(new Set(this.data.tags.character));
                 this.data.tags.event = Array.from(new Set(this.data.tags.event));
                 this.data.tags.master = Array.from(new Set(this.data.tags.character.concat(this.data.tags.event)));
+        },
+        setRangeSliderMinMaxValue() { // 表示年スライダーの最小/最大値を設定
+            const years = Object.keys(this.yearSummary).sort();
+            this.displaySetting.yearRange.min = Number(years[0]);
+            this.displaySetting.yearRange.max = Number(years[years.length - 1]);
+            this.displaySetting.yearRange.value = [Number(years[0]), Number(years[years.length - 1])];
         },
         async formatData() { // 読み込んだxlsxをフォーマット
             if (this.validData()) {
@@ -673,7 +779,9 @@ var app = new Vue({
                 await this.createPeriodEvent();
                 await this.createEvent();
                 await this.createYearSummary();
+                await this.createYearRangeSummary();
                 this.setTags();
+                this.setRangeSliderMinMaxValue();
             };
             if (this.state.message.length != 0) {
                 this.state.errorSnack = true;
@@ -747,6 +855,11 @@ var app = new Vue({
             });
             // 最後のイベントのYearからSummaryをpush
             data.push(this.yearSummary[data.slice(-1)[0].year]);
+
+            // year range summaryを追加
+            data.unshift(this.yearRangeSummary.head);
+            data.push(this.yearRangeSummary.tail);
+
             this.timelineData = data;
         },
         createTimelineColumns() { // characterSelectedの更新に合わせてtableColumnの表示状態を更新
@@ -783,6 +896,9 @@ var app = new Vue({
             if (currentTag.length == 0) return true;
             return (this.intersection(currentTag, tags).length == 0) ? false : true;
         },
+        isYearMatch2DisplayRange(year) {
+            return (this.displaySetting.yearRange.value[0] <= year) && (year <= this.displaySetting.yearRange.value[1]);
+        },
         updateTimelineData(mode=null) { // characterSelectedの更新に合わせてshowの状態を更新
             let currentAge = {};
             let currentState = {};
@@ -795,7 +911,18 @@ var app = new Vue({
                 const row = this.timelineData[index];
                 row.height = "0px";
                 // 列がshow状態かどうかを判断
-                if ((this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize) && this.isEventTagsMatch2Row(mode, row)) {
+                if (
+                    this.state.showYearRangeSummary &&
+                    row.yearRangeSummary &&
+                    (
+                        (Object.is(this.yearRangeSummary.head, row) && row.end >= this.displaySetting.yearRange.min) ||
+                        (Object.is(this.yearRangeSummary.tail, row) && row.start <= this.displaySetting.yearRange.max)
+                    )
+                ) {
+                    row.show = true;
+                } else if (
+                    (this.intersection(this.characterSelected, row.characters).length > 0) && (row.summary == this.yearSummary[row.year].summarize) && this.isEventTagsMatch2Row(mode, row) && this.isYearMatch2DisplayRange(row.year)
+                ) {
                     row.show = true;
                     // Year列の表示状態変更
                     if (currentYear != row.year) {
@@ -833,6 +960,63 @@ var app = new Vue({
                     this.yearSummary[year][`${characterName}_ev`][0].title = `ALL: ${numEvents.all}件\nカテゴリ: ${numEvents.category}件\nキャラクタ: ${numEvents.character}件`;
                 };
             };
+        },
+        aggregateYearSummary(start, end, key) {
+            const targetYearRangeSummary = this.yearRangeSummary[key];
+            targetYearRangeSummary.year = `${start} - ${end}`;
+            targetYearRangeSummary.start = start;
+            targetYearRangeSummary.end = end;
+            let date = [];
+            for (const characterName of this.data.characters) {
+                let numEventsAll = 0;
+                let numEventsCategory = 0;
+                let numEventsCharacter = 0;
+                for (let currentYear = start; currentYear <= end; currentYear++) {
+                    if (!(String(currentYear) in this.yearSummary)) { continue; }
+                    const currentYearSummary = this.yearSummary[String(currentYear)];
+                    const numEvents = currentYearSummary[`${characterName}_ev`][0].numEvents;
+                    const tl = currentYearSummary[`${characterName}_tl`];
+
+                    // add num events
+                    numEventsAll += numEvents.all;
+                    numEventsCategory += numEvents.category;
+                    numEventsCharacter += numEvents.character;
+
+                    // set timeline infomations
+                    if (!Number.isNaN(currentYearSummary.date.getTime())) date.push(currentYearSummary.date);
+                };
+                // set title
+                targetYearRangeSummary[`${characterName}_ev`][0].title = `ALL: ${numEventsAll}件\nカテゴリ: ${numEventsCategory}件\nキャラクタ: ${numEventsCharacter}件`;
+
+                // 範囲内で生存期間がある場合died = false
+                if (key == "head") targetYearRangeSummary[`${characterName}_tl`].died = false;
+                if (key == "tail") {
+                    const character = this.data.settings.character[characterName];
+                    const birthYear = character.birthday.getFullYear();
+                    if (character.death === null) {
+                        targetYearRangeSummary[`${characterName}_tl`].died = false;
+                        continue;
+                    }
+                    const deathYear = character.death.getFullYear();
+                    const aliveRange = this.range(birthYear, deathYear);
+                    const aggregateRange = this.range(start, end);
+                    const lenAliveYears = this.intersection(aliveRange, aggregateRange).length;
+                    targetYearRangeSummary[`${characterName}_tl`].died = (lenAliveYears == 0);
+                };
+            };
+            if (key == "head") {
+                targetYearRangeSummary.date = new Date(Math.max(...date));
+            } else if (key == "tail") {
+                targetYearRangeSummary.date = new Date(Math.min(...date));
+            };
+        },
+        updateYearRangeSummary() { // 表示設定に合わせて先頭と末尾のyearRangeSummaryを作成
+            const displayStartYear = Number(this.displaySetting.yearRange.value[0]);
+            const displayEndYear = Number(this.displaySetting.yearRange.value[1]);
+            const startYear = this.displaySetting.yearRange.min;
+            const endYear = this.displaySetting.yearRange.max;
+            this.aggregateYearSummary(startYear, displayStartYear - 1, "head");
+            this.aggregateYearSummary(displayEndYear + 1, endYear, "tail");
         },
         // Functions
         async init() { // 初期化処理
@@ -941,6 +1125,20 @@ var app = new Vue({
                 this.changeTagState("character");
                 this.changeTagState("event");
             };
+        },
+        displayYearRangeChanged() { // 表示年領域変更時に呼び出し
+            if (
+                this.displaySetting.yearRange.value[0] == Number(this.displaySetting.yearRange.min) &&
+                this.displaySetting.yearRange.value[1] == Number(this.displaySetting.yearRange.max)
+            ) {
+                // delete year range summary
+                this.state.showYearRangeSummary = false;
+            } else {
+                // initialize year range summary
+                this.state.showYearRangeSummary = true;
+                this.updateYearRangeSummary();
+            };
+            this.update(null);
         },
         changeHighlightState() {
             this.state.highlightMode = !this.state.highlightMode;
