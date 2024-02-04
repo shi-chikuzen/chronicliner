@@ -61,6 +61,11 @@
                         <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
                         <v-icon v-else>mdi-star-outline</v-icon>
                     </v-btn>
+                    <!-- 設定ボタン -->
+                    <v-btn icon @click="changeShowDisplaySettingState()">
+                        <v-icon v-if="this.state.showDisplaySetting">mdi-cog</v-icon>
+                        <v-icon v-else>mdi-cog-outline</v-icon>
+                    </v-btn>
                     <!-- ヘルプ -->
                     <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank" rel="noopener noreferrer">
                         <v-btn icon>
@@ -72,10 +77,52 @@
                 </v-app-bar>
                 <!-- Contents -->
                 <v-main id="main">
+                    <v-snackbar
+                    id="displaySettingSnackbarParent"
+                    v-model="this.state.showDisplaySetting"
+                    timeout="-1">
+                        <v-form>
+                            <v-row>
+                                <v-col cols="12">
+                                    <span>表示設定</span>
+                                </v-col>
+                                <v-col cols="12">
+                                    <p class="text-caption">UI表示設定</p>
+                                    <v-switch
+                                    @click="changeAccordionDisplayState();"
+                                    v-model="displaySetting.showAccordion"
+                                    :label="showAccordionSwicherLabel"
+                                    :disabled="!state.ready"
+                                    color="primary"
+                                    hide-details
+                                    inset></v-switch>
+                                </v-col>
+                                <v-col cols="12">
+                                    <p class="text-caption">表示領域設定</p>
+                                    <v-range-slider
+                                    v-model="displaySetting.yearRange.value"
+                                    :min="displaySetting.yearRange.min"
+                                    :max="displaySetting.yearRange.max"
+                                    :disabled="!state.ready"
+                                    step="1"
+                                    color="primary"
+                                    strict
+                                    @end="displayYearRangeChanged">
+                                        <template v-slot:prepend>
+                                            <span class="text-caption">{{displaySetting.yearRange.value[0]}}</span>
+                                        </template>
+                                        <template v-slot:append>
+                                            <span class="text-caption">{{displaySetting.yearRange.value[1]}}</span>
+                                        </template>
+                                    </v-range-slider>
+                                </v-col>
+                            </v-row>
+                        </v-form>
+                    </v-snackbar>
                     <v-container fluid>
                         <v-row class="px-3">
                             <!-- Select Field -->
-                            <v-col cols="12">
+                            <v-col cols="12" class="accordionParent">
                                 <v-expansion-panels accordion>
                                     <v-expansion-panel
                                     elevation="1">
@@ -131,7 +178,7 @@
                                     </v-expansion-panel>
                                 </v-expansion-panels>
                             </v-col>
-                            <v-col cols="12">
+                            <v-col cols="12" class="accordionParent">
                                 <v-expansion-panels accordion>
                                     <v-expansion-panel
                                     elevation="1">
@@ -255,7 +302,8 @@
                                                                         text
                                                                         icon
                                                                         color="primary"
-                                                                        @click="toggleYearSummaryShow(item.year); update(currentEventTagMode);">
+                                                                        @click="toggleYearSummaryShow(item.year); update(currentEventTagMode);"
+                                                                        v-if="item.year in yearSummary">
                                                                             <v-icon v-if="yearSummary[item.year].summarize" class="size">
                                                                                 mdi-plus
                                                                             </v-icon>
@@ -281,9 +329,9 @@
                                                                         v-on="on"
                                                                         color="rgba(0,0,0,0)"
                                                                         >
-                                                                            <svg v-if="item[column.value].firstAfterDied" class="arrow-svg svgFill" :data-color="
+                                                                            <svg v-if="isFirstYearAfterDied(item, item[column.value])" class="arrow-svg svgFill" :data-color="
                                                                             item[column.value].color" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.27 28.73"><defs><style>.cls-1{fill:#f7f9f7;}.cls-2{fill:none;stroke:#fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:4px;}</style></defs><g id="レイヤー_2" data-name="レイヤー 2"><g id="レイヤー_1-2" data-name="レイヤー 1"><polygon class="cls-1" points="26.49 26.73 1.72 0 51.27 0 26.49 26.73"/><line class="cls-2" x1="26.63" y1="26.73" x2="51.27" y2="2.09"/><line class="cls-2" x1="2" y1="2.09" x2="26.63" y2="26.73"/></g></g></svg>
-                                                                            <img v-else-if="item[column.value].age > 0" v-show="item[column.value].needsArrow" src="./svg/nofill.svg" alt="" class="arrow-svg">
+                                                                            <img v-else-if="displayNofillArrow(item, item[column.value])" v-show="item[column.value].needsArrow" src="./svg/nofill.svg" alt="" class="arrow-svg">
                                                                             <img v-else v-show="item[column.value].needsArrow" src="./svg/fill.svg" alt="" class="arrow-svg">
                                                                         </v-sheet>
                                                                     </template>
