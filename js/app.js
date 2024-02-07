@@ -21,7 +21,7 @@ var app = new Vue({
     data: {
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false},
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false, showCharacterDB: false},
         displaySetting: {
             showAccordion: true,
             yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},

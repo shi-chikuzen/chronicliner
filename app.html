@@ -61,6 +61,11 @@
                         <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
                         <v-icon v-else>mdi-star-outline</v-icon>
                     </v-btn>
+                    <!-- キャラクターデータベース -->
+                    <v-btn icon @click="state.showCharacterDB = true">
+                        <v-icon v-if="state.showCharacterDB">mdi-database</v-icon>
+                        <v-icon v-else>mdi-database-outline</v-icon>
+                    </v-btn>
                     <!-- 設定ボタン -->
                     <v-btn icon @click="changeShowDisplaySettingState()">
                         <v-icon v-if="this.state.showDisplaySetting">mdi-cog</v-icon>
@@ -459,10 +464,28 @@
                         </v-btn>
                     </template>
                 </v-snackbar>
+                <v-dialog
+                v-model="state.showCharacterDB"
+                width="auto">
+                    <v-card>
+                        <v-toolbar>
+                            <v-toolbar-title class="text-caption text-grey">
+                                Character Database
+                            </v-toolbar-title>
+                            <v-spacer></v-spacer>
+                            <v-btn
+                            icon
+                            @click="state.showCharacterDB = false">
+                                <v-icon>mdi-window-close</v-icon>
+                            </v-btn>
+                        </v-toolbar>
+                    </v-card>
+                </v-dialog>
             </v-app>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
         <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+        <script src="https://unpkg.com/http-vue-loader"></script>
         <script type="text/javascript" src="./js/app.js"></script>
     </body>
 </html>
