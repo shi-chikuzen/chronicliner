@@ -468,7 +468,9 @@
                 v-model="state.showCharacterDB"
                 width="auto">
                     <v-card>
-                        <v-toolbar>
+                        <v-toolbar
+                        density="compact"
+                        flat>
                             <v-toolbar-title class="text-caption text-grey">
                                 Character Database
                             </v-toolbar-title>
@@ -479,13 +481,32 @@
                                 <v-icon>mdi-window-close</v-icon>
                             </v-btn>
                         </v-toolbar>
+                        <v-tabs
+                        v-model="characterDatabase.mainTab"
+                        align-tabs="end">
+                            <v-tab>FILE</v-tab>
+                            <v-tab>CHARACTER</v-tab>
+                            <v-tab>DETAIL</v-tab>
+                            <v-tab>COMPARE</v-tab>
+                        </v-tabs>
+                        <v-window>
+                            <v-window-item>
+                                <v-container fuild>
+                                    <v-row>
+                                        <v-col v-if="characterDatabase.mainTab == 0">file</v-col>
+                                        <v-col v-if="characterDatabase.mainTab == 1">character</v-col>
+                                        <v-col v-if="characterDatabase.mainTab == 2">detail</v-col>
+                                        <v-col v-if="characterDatabase.mainTab == 3">compare</v-col>
+                                    </v-row>
+                                </v-container>
+                            </v-window-item>
+                        </v-window>
                     </v-card>
                 </v-dialog>
             </v-app>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
         <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-        <script src="https://unpkg.com/http-vue-loader"></script>
         <script type="text/javascript" src="./js/app.js"></script>
     </body>
 </html>

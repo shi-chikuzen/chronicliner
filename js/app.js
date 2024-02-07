@@ -53,6 +53,9 @@ var app = new Vue({
         yearSummary: {},
         yearRangeSummary: {"head": {}, "tail":{}},
         tableHeight: 0,
+        characterDatabase: {
+            mainTab: null,
+        }
     },
     computed: {
         snackMessage: function () {
