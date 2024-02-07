@@ -489,18 +489,26 @@
                             <v-tab>DETAIL</v-tab>
                             <v-tab>COMPARE</v-tab>
                         </v-tabs>
-                        <v-window>
-                            <v-window-item>
-                                <v-container fuild>
-                                    <v-row>
-                                        <v-col v-if="characterDatabase.mainTab == 0">file</v-col>
-                                        <v-col v-if="characterDatabase.mainTab == 1">character</v-col>
-                                        <v-col v-if="characterDatabase.mainTab == 2">detail</v-col>
-                                        <v-col v-if="characterDatabase.mainTab == 3">compare</v-col>
-                                    </v-row>
-                                </v-container>
-                            </v-window-item>
-                        </v-window>
+                        <v-card-text>
+                            <v-window v-model="characterDatabase.mainTab">
+                                <!-- file -->
+                                <v-window-item>
+                                    hoge
+                                </v-window-item>
+                                <!-- character -->
+                                <v-window-item>
+                                    fuga
+                                </v-window-item>
+                                <!-- deatail -->
+                                <v-window-item>
+                                    fuga
+                                </v-window-item>
+                                <!-- compare -->
+                                <v-window-item>
+                                    fuga
+                                </v-window-item>
+                            </v-window>
+                        </v-card-text>
                     </v-card>
                 </v-dialog>
             </v-app>
