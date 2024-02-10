@@ -1255,6 +1255,7 @@ var app = new Vue({
                     continue;
                 } else if (dtype == "img") {
                     data.img.push(value);
+                    continue;
                 }
                 const index = row[colNames.index];
                 if (dtype == "date") {
