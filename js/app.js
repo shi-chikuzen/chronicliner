@@ -53,8 +53,12 @@ var app = new Vue({
         yearSummary: {},
         yearRangeSummary: {"head": {}, "tail":{}},
         tableHeight: 0,
+        characterDatabaseWorkbook: null,
         characterDatabase: {
             mainTab: null,
+            fileSelected: null,
+            state: {ready: false, fileError: false},
+            data: {},
         }
     },
     computed: {
@@ -91,6 +95,7 @@ var app = new Vue({
     },
     watch: {
         workbook: 'init',
+        characterDatabaseWorkbook: "initCharacterDatabase",
         characterSelected: 'update',
         tagBulkMode: 'changeTagBulkMode',
     },
@@ -1181,7 +1186,7 @@ var app = new Vue({
             displaySettingSnackbar.style.marginTop = String(header_end + 12) + "px";
             displaySettingSnackbar.style.marginRight = "20px"
         },
-        changeAccordionDisplayState() {
+        changeAccordionDisplayState() { // 設定アコーディオンの表示状態を変更する
             const vm = this;
             const accordions = document.querySelectorAll(".accordionParent");
             accordions.forEach(function (accordion, index, array) {
@@ -1191,6 +1196,24 @@ var app = new Vue({
                 this.setTableHeight();
             });
         },
+        //
+        //########################
+        // Character Data Base
+        //########################
+        //
+        readCharacterDatabaseFile: function (file) { // xlsx読み込み
+            const vm = this;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                let data = e.target.result;
+                vm.characterDatabaseWorkbook = XLSX.read(data, { 'type': 'binary' })
+            };
+            reader.readAsBinaryString(file);
+        },
+        initCharacterDatabase() { // キャラクターDBの初期化
+            this.characterDatabase.state.ready = true;
+            this.characterDatabase.state.fileError = false;
+        }
     },
 });
 

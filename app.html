@@ -489,11 +489,35 @@
                             <v-tab>DETAIL</v-tab>
                             <v-tab>COMPARE</v-tab>
                         </v-tabs>
-                        <v-card-text>
+                        <v-card-text class="pt-5">
                             <v-window v-model="characterDatabase.mainTab">
                                 <!-- file -->
                                 <v-window-item>
-                                    hoge
+                                    <v-row class="d-flex justify-center">
+                                        <v-col cols="5" class="d-flex align-center justify-center">
+                                            <v-form>
+                                                <v-file-input
+                                                v-model="characterDatabase.fileSelected"
+                                                @change="readCharacterDatabaseFile"
+                                                accept=".xlsx"
+                                                label="Select File..."
+                                                hide-input
+                                                prepend-icon="mdi-folder-table-outline"
+                                                class="pt-0 mt-0"
+                                                ></v-file-input>
+                                            </v-form>
+                                            <v-expand-x-transition>
+                                                <v-chip
+                                                v-show="this.characterDatabase.state.ready"
+                                                v-if="this.characterDatabase.fileSelected != null"
+                                                :color="this.characterDatabase.state.fileError? 'error' : 'success'"
+                                                class="mr-1"
+                                                outlined>
+                                                    {{this.characterDatabase.fileSelected.name}}
+                                                </v-chip>
+                                            </v-expand-x-transition>
+                                        </v-col>
+                                    </v-row>
                                 </v-window-item>
                                 <!-- character -->
                                 <v-window-item>
