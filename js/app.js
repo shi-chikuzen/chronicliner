@@ -41,7 +41,8 @@ var app = new Vue({
             "beforeAfter": { "以前": 0, "": 1, "期間": 1, "以降": 2 },
             "backgroundColor": "rgb(247, 248, 247)",
             "borderColor": "rgb(229, 229, 229)",
-            "summaryBackgroundColor": "#DADADA"
+            "summaryBackgroundColor": "#DADADA",
+            "characterDatabase": {"dtype": "データ型", "index": "項目名", "value": "値"},
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [], "tags": {"character": [], "event": [], "master": []} },
         characterSelected: [],
@@ -57,7 +58,10 @@ var app = new Vue({
         characterDatabase: {
             mainTab: null,
             fileSelected: null,
-            state: {ready: false, fileError: false},
+            state: { ready: false, fileError: false },
+            characters: {},
+            template: {"img": [], "date": [], "data": [], "graph": [], "group": "登録グループなし"},
+            columns: { "time": [], "data":[], "graph":[]},
             data: {},
         }
     },
@@ -1210,9 +1214,71 @@ var app = new Vue({
             };
             reader.readAsBinaryString(file);
         },
-        initCharacterDatabase() { // キャラクターDBの初期化
+        // Data Create
+        validCdbData() { // キャラクターデータが存在するか確認する
+            const sheetNames = this.characterDatabaseWorkbook.SheetNames;
+            let valid = true;
+            if (sheetNames.length == 1 && sheetNames[0] == "TEMPLATE") {
+                this.state.message.push("エクセルファイルにキャラクターが登録されていません");
+                valid = false;
+            }
+            for (let sheetName of sheetNames) {
+                const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[sheetName], { header: 1 });
+                const colNames = Object.values(this.defaults.characterDatabase);
+                for (let colName of colNames) {
+                    if (data[0].indexOf(colName) == -1) {
+                        this.state.message.push(`${sheetName}シートに以下の列が存在しません: ${colName}`);
+                            valid = false;
+                    }
+                }
+            }
+            this.characterDatabase.state.fileError = !valid;
+            return valid;
+        },
+        createCharacterPage(characterName) { // キャラクタデータを作成して登録する
+            // init
+            const rawData = XLSX.utils.sheet_to_json(this.characterDatabaseWorkbook.Sheets[characterName], { header: 0 });
+            let data = _.cloneDeep(this.characterDatabase.template);
+            const dtypes = Object.keys(data);
+            const colNames = this.defaults.characterDatabase;
+
+            // 各行を処理
+            for (let row of rawData) {
+                const dtype = row[colNames.dtype];
+                if (!dtype in dtypes) {
+                    this.state.message.push(`キャラクター${characterName}に設定されている以下のデータ型は無視されます：${dtype}`)
+                    continue;
+                }
+                let value = row[colNames.value];
+                if (dtype == "group") {
+                    data.group = value;
+                    continue;
+                } else if (dtype == "img") {
+                    data.img.push(value);
+                }
+                const index = row[colNames.index];
+                if (dtype == "date") {
+                    value = this.resetDateFromLimit(this.formatDate(value), "hour");
+                }
+                data[dtype].push({ [index]: value });
+            }
+
+            // キャラクタ一覧にキャラクタを登録
+            if (Object.keys(this.characterDatabase.characters).indexOf(data.group) == -1) {
+                this.characterDatabase.characters[data.group] = [];
+            }
+            this.characterDatabase.characters[data.group].push(characterName);
+
+            // キャラクタデータを登録
+            this.characterDatabase.data[characterName] = data;
+        },
+        async initCharacterDatabase() { // キャラクターDBの初期化
+            if (this.validCdbData) {
+                for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
+                    await this.createCharacterPage(sheetName);
+                }
+            }
             this.characterDatabase.state.ready = true;
-            this.characterDatabase.state.fileError = false;
         }
     },
 });

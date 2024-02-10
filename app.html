@@ -485,9 +485,9 @@
                         v-model="characterDatabase.mainTab"
                         align-tabs="end">
                             <v-tab>FILE</v-tab>
-                            <v-tab>CHARACTER</v-tab>
-                            <v-tab>DETAIL</v-tab>
-                            <v-tab>COMPARE</v-tab>
+                            <v-tab :disabled="!characterDatabase.state.ready">CHARACTER</v-tab>
+                            <v-tab :disabled="!characterDatabase.state.ready">DETAIL</v-tab>
+                            <v-tab :disabled="!this.characterDatabase.state.ready">COMPARE</v-tab>
                         </v-tabs>
                         <v-card-text class="pt-5">
                             <v-window v-model="characterDatabase.mainTab">
@@ -520,15 +520,15 @@
                                     </v-row>
                                 </v-window-item>
                                 <!-- character -->
-                                <v-window-item>
+                                <v-window-item disabled="!characterDatabase.state.ready">
                                     fuga
                                 </v-window-item>
-                                <!-- deatail -->
-                                <v-window-item>
+                                <!-- detail -->
+                                <v-window-item disabled="!characterDatabase.state.ready">
                                     fuga
                                 </v-window-item>
                                 <!-- compare -->
-                                <v-window-item>
+                                <v-window-item disabled="!characterDatabase.state.ready">
                                     fuga
                                 </v-window-item>
                             </v-window>
