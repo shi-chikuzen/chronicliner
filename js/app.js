@@ -56,12 +56,17 @@ var app = new Vue({
         tableHeight: 0,
         characterDatabaseWorkbook: null,
         characterDatabase: {
+            width: 500,
             mainTab: null,
             fileSelected: null,
+            characterListSelected: null,
+            columnListSelected: null,
+            characterList: [],
+            columnList: [],
             state: { ready: false, fileError: false },
             characters: {},
-            template: {"img": [], "date": [], "data": [], "graph": [], "group": "登録グループなし"},
-            columns: { "time": [], "data":[], "graph":[]},
+            template: {"img": [], "date": [], "data": [], "graph": [], "group": "登録グループなし", "color": [],},
+            columns: { "color":[], "date": [], "data":[], "graph":[], },
             data: {},
         }
     },
@@ -83,10 +88,30 @@ var app = new Vue({
         },
         numRows: function () {
             return this.timelineData.filter((row) => row.show).length;
+        },
+        currentCharacter: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected];
+            if (selectedRow === undefined) return this.characterDatabase.template;
+            return this.characterDatabase.data[selectedRow.name];
+        },
+        currentColumnRows: function () {
+            const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
+            if (selectedColumn === undefined) return [];
+
+            const colName = selectedColumn.colName;
+            const dtype = selectedColumn.dtype;
+            return [];
+        },
+        characterDatabaseHeader: function () {
+            return []
+        },
+        characterDatabaseItems: function () {
+            return []
         }
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
+        this.setCharacterDatabaseWidth();
         window.addEventListener("resize", this.windowResized);
         this.$nextTick(function () {
             this.setTableHeight();
@@ -1060,6 +1085,7 @@ var app = new Vue({
         },
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
+            this.setCharacterDatabaseWidth();
         }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
             this.yearSummary[year].summarize = !this.yearSummary[year].summarize;
@@ -1205,6 +1231,9 @@ var app = new Vue({
         // Character Data Base
         //########################
         //
+        setCharacterDatabaseWidth() {
+            this.characterDatabase.width = window.innerWidth*0.75;
+        },
         readCharacterDatabaseFile: function (file) { // xlsx読み込み
             const vm = this;
             const reader = new FileReader();
@@ -1249,11 +1278,12 @@ var app = new Vue({
                     this.state.message.push(`キャラクター${characterName}に設定されている以下のデータ型は無視されます：${dtype}`)
                     continue;
                 }
+                data.name = characterName;
                 let value = row[colNames.value];
                 if (dtype == "group") {
                     data.group = value;
                     continue;
-                } else if (dtype == "img") {
+                }  else if (dtype == "img") {
                     data.img.push(value);
                     continue;
                 }
@@ -1262,6 +1292,9 @@ var app = new Vue({
                     value = this.resetDateFromLimit(this.formatDate(value), "hour");
                 }
                 data[dtype].push({ [index]: value });
+                if (this.characterDatabase.columns[dtype].indexOf(index) == -1) {
+                    this.characterDatabase.columns[dtype].push(index);
+                }
             }
 
             // キャラクタ一覧にキャラクタを登録
@@ -1273,13 +1306,45 @@ var app = new Vue({
             // キャラクタデータを登録
             this.characterDatabase.data[characterName] = data;
         },
+        createCharacterList() { // キャラクタタブ用のリストを作成する
+            let res = [];
+            for (const groupName in this.characterDatabase.characters) {
+                const characters = this.characterDatabase.characters[groupName];
+                res.push({ name: groupName, disabled: true });
+                for (const character of characters) {
+                    res.push({ name: character, disabled: false });
+                }
+            }
+            this.characterDatabase.characterList = res;
+        },
+        createColumnList() {
+            let res = [];
+            for (const dtype in this.characterDatabase.columns) {
+                const columns = this.characterDatabase.columns[dtype];
+                res.push({ colName: dtype, disabled: true });
+                for (const colName of columns) {
+                    res.push({ colName: colName, disabled: false, dtype: dtype });
+                }
+            }
+            this.characterDatabase.columnList = res;
+        },
+        clearCharacterDatabase() { // キャラクタDBのデータクリア
+            this.characterDatabase.characters = {};
+            this.characterDatabase.characterList = [];
+            this.characterDatabase.data = {};
+            this.characterDatabase.columnList = [];
+        },
         async initCharacterDatabase() { // キャラクターDBの初期化
             if (this.validCdbData) {
+                this.clearCharacterDatabase();
                 for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
                     await this.createCharacterPage(sheetName);
                 }
+                await this.createCharacterList();
+                await this.createColumnList();
+                this.characterDatabase.state.ready = true;
+                this.characterDatabase.mainTab = 1;
             }
-            this.characterDatabase.state.ready = true;
         }
     },
 });
