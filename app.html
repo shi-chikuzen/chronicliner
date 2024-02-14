@@ -466,7 +466,8 @@
                 </v-snackbar>
                 <v-dialog
                 v-model="state.showCharacterDB"
-                :width="characterDatabase.width">
+                :width="characterDatabase.width"
+                scrollable>
                     <v-card>
                         <v-toolbar
                         density="compact"
@@ -534,14 +535,54 @@
                                                 >{{row.name}}</v-tab>
                                             </v-tabs>
                                         </v-col>
-                                        <v-col cols="8">
+                                        <v-col cols="10">
                                             <v-row>
-                                                <v-col cols="5">
+                                                <v-col cols="6">
                                                     <v-card-title>
                                                         {{currentCharacter.name}}
                                                     </v-card-title>
+                                                    <v-tabs v-model="characterDatabase.dataTab">
+                                                        <v-tab>TABLE</v-tab>
+                                                        <v-tab>TIMELINE</v-tab>
+                                                        <v-tab>GRAPH</v-tab>
+                                                    </v-tabs>
+                                                    <v-window v-model="characterDatabase.dataTab">
+                                                        <v-window-item>
+                                                            <v-data-table
+                                                            :headers="characterDatabase.characterHeader"
+                                                            :items="characterDatabaseItems"
+                                                            group-by="dtype"
+                                                            show-group-by>
+                                                                <template
+                                                                v-slot:item.value="{item}">
+                                                                    <span v-if="item.dtype == 'date'">
+                                                                        {{item.value.toLocaleDateString()}}
+                                                                    </span>
+                                                                    <span v-else-if="item.dtype == 'color'">
+                                                                        <v-chip :color="item.value">
+                                                                            {{item.value}}
+                                                                        </v-chip>
+                                                                    </span>
+                                                                    <span v-else>
+                                                                        {{item.value}}
+                                                                    </span>
+                                                                </template>
+                                                            </v-data-table>
+                                                        </v-window-item>
+                                                        <v-window-item>
+                                                            <v-data-table
+                                                            :headers="characterDatabase.timelineHeader"
+                                                            :items="characterDatabaseTimelineItems">
+                                                                <template
+                                                                v-slot:item.date="{item}">
+                                                                    {{item.date.toLocaleDateString()}}
+                                                                </template>
+                                                            </v-data-table>
+                                                        </v-window-item>
+                                                        <v-window-item></v-window-item>
+                                                    </v-window>
                                                 </v-col>
-                                                <v-col cols="5"></v-col>
+                                                <v-col cols="6"></v-col>
                                             </v-row>
                                         </v-col>
                                     </v-row>

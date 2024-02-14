@@ -1,5 +1,4 @@
 // Copyright (c) 2022 @shi_chikuzen
-
 Vue.use(Vuetify);
 
 Vue.config.devtools = true;
@@ -13,6 +12,17 @@ const vuetify = new Vuetify({
             },
         },
     },
+});
+
+
+const { reactiveProp } = VueChartJs.mixins;
+Vue.component("cdbRadarChart", {
+    extends: VueChartJs.Radar,
+    mixins: [reactiveProp],
+    props: ["options"],
+    mounted() {
+        this.renderChart(this.chartData, this.options);
+    }
 });
 
 var app = new Vue({
@@ -58,11 +68,22 @@ var app = new Vue({
         characterDatabase: {
             width: 500,
             mainTab: null,
+            dataTab: null,
             fileSelected: null,
             characterListSelected: null,
             columnListSelected: null,
             characterList: [],
             columnList: [],
+            characterHeader: [
+                { text: "データ型", value:"dtype"},
+                { text: "項目名", value: "index", sortable: true, groupable: false,},
+                { text: "値", value: "value", sortable: true, groupable: false, }
+            ],
+            timelineHeader: [
+                { text: "日付", value: "date"},
+                { text: "カテゴリ", value: "category" },
+                { text: "タイトル", value: "title" }
+            ],
             state: { ready: false, fileError: false },
             characters: {},
             template: {"img": [], "date": [], "data": [], "graph": [], "group": "登録グループなし", "color": [],},
@@ -102,12 +123,53 @@ var app = new Vue({
             const dtype = selectedColumn.dtype;
             return [];
         },
-        characterDatabaseHeader: function () {
-            return []
-        },
         characterDatabaseItems: function () {
-            return []
-        }
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return [];
+
+            let res = [];
+            const characterName = selectedRow.name;
+            const data = this.characterDatabase.data[characterName];
+            const dtypes = Object.keys(this.characterDatabase.columns);
+            for (const dtype of dtypes) {
+                const df = data[dtype];
+                if (df.length == 0) continue;
+                for (const row of df) {
+                    for (let [k, v] of Object.entries(row)) {
+                        res.push({ "index": k, "value": v, "dtype": dtype });
+                        break;
+                    }
+                }
+            }
+            return res;
+        },
+        characterDatabaseTimelineItems: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return [];
+
+            const characterName = selectedRow.name;
+            if (this.data.characters.indexOf(characterName) == -1) return [];
+
+            let res = [];
+            this.timelineData.forEach((row) => {
+                if (
+                    !row.summary &&
+                    (row.characters.indexOf(characterName) != -1)
+                ) {
+                    const events = row[`${characterName}_ev`];
+                    for (const event of events) {
+                        const item = {
+                            date: row.date,
+                            category: (event.category == characterName) ? "キャラクター" : event.category,
+                            title: event.title,
+                        };
+                        res.push(item);
+                    }
+                }
+            });
+
+            return res;
+        },
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
