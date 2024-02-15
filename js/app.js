@@ -63,6 +63,7 @@ var app = new Vue({
             fileSelected: null,
             characterListSelected: null,
             columnListSelected: null,
+            imgSelected: null,
             characterList: [],
             columnList: [],
             characterHeader: [
@@ -87,7 +88,6 @@ var app = new Vue({
                 scale: {
                     ticks: {
                         beginAtZero: true,
-                        // min: 0,
                     }
                 }
             },
@@ -146,6 +146,14 @@ var app = new Vue({
                 }
             }
             return res;
+        },
+        characterDatabaseImages: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return [];
+
+            const characterName = selectedRow.name;
+            const data = this.characterDatabase.data[characterName];
+            return data.img;
         },
         characterDatabaseTimelineItems: function () {
             const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
@@ -1361,7 +1369,7 @@ var app = new Vue({
                     data.group = value;
                     continue;
                 }  else if (dtype == "img") {
-                    data.img.push(value);
+                    data.img.push({ src: value });
                     continue;
                 }
                 const index = row[colNames.index];

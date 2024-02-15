@@ -593,7 +593,18 @@
                                                         </v-window-item>
                                                     </v-window>
                                                 </v-col>
-                                                <v-col cols="6"></v-col>
+                                                <v-col cols="6" class="mt-5">
+                                                    <v-carousel
+                                                    hide-delimiter-background="true"
+                                                    height="auto"
+                                                    model="characterDatabase.imgSelected">
+                                                        <v-carousel-item
+                                                        v-for="(item, index) in characterDatabaseImages"
+                                                        :key="`cdbImages_${index}`"
+                                                        :src="item.src">
+                                                        </v-carousel-item>
+                                                    </v-carousel>
+                                                </v-col>
                                             </v-row>
                                         </v-col>
                                     </v-row>
