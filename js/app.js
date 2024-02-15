@@ -14,21 +14,12 @@ const vuetify = new Vuetify({
     },
 });
 
-
-const { reactiveProp } = VueChartJs.mixins;
-Vue.component("cdbRadarChart", {
-    extends: VueChartJs.Radar,
-    mixins: [reactiveProp],
-    props: ["options"],
-    mounted() {
-        this.renderChart(this.chartData, this.options);
-    }
-});
-
 var app = new Vue({
     el: '#app',
     vuetify: new Vuetify(),
     data: {
+        primaryColor: '#00aeb9',
+        primaryColorAlpha: "rgba(0, 174, 185, 0.2)",
         fileSelected: null,
         workbook: null,
         state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false, showCharacterDB: false},
@@ -89,6 +80,19 @@ var app = new Vue({
             template: {"img": [], "date": [], "data": [], "graph": [], "group": "登録グループなし", "color": [],},
             columns: { "color":[], "date": [], "data":[], "graph":[], },
             data: {},
+            chart: null,
+            chartOptions: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scale: {
+                    ticks: {
+                        beginAtZero: true,
+                        // min: 0,
+                    }
+                }
+            },
+            chartData: {},
+            chartWidth: 0,
         }
     },
     computed: {
@@ -176,6 +180,9 @@ var app = new Vue({
         this.setCharacterDatabaseWidth();
         window.addEventListener("resize", this.windowResized);
         this.$nextTick(function () {
+            this.characterDatabase.chartWidth = ((
+                this.characterDatabase.width - 48
+            ) / 12 * 5) - 24;
             this.setTableHeight();
             this.replaceDisplaySettingSnackbar();
             this.state.showDisplaySetting = false;
@@ -1148,6 +1155,7 @@ var app = new Vue({
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
             this.setCharacterDatabaseWidth();
+            this.setCharacterDatabaseGraphWH();
         }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
             this.yearSummary[year].summarize = !this.yearSummary[year].summarize;
@@ -1296,6 +1304,13 @@ var app = new Vue({
         setCharacterDatabaseWidth() {
             this.characterDatabase.width = window.innerWidth*0.75;
         },
+        setCharacterDatabaseGraphWH() {
+            let cdbParent = document.querySelector("#cdbGraphParent")
+            if (cdbParent === null) return;
+            const width = cdbParent.parentElement.clientWidth;
+            if (width != 0) { this.characterDatabase.chartWidth = width };
+            cdbParent.style.height = `${this.characterDatabase.chartWidth}px`;
+        },
         readCharacterDatabaseFile: function (file) { // xlsx読み込み
             const vm = this;
             const reader = new FileReader();
@@ -1368,6 +1383,33 @@ var app = new Vue({
             // キャラクタデータを登録
             this.characterDatabase.data[characterName] = data;
         },
+        createCharacterChartData(characterName) { // chart用データを作成
+            const data = this.characterDatabase.data[characterName].graph;
+            if (data.length == 0) return;
+
+            let labels = [];
+            let dataset = {
+                label: characterName,
+                data: [],
+                backgroundColor: this.primaryColorAlpha,
+                borderColor: this.primaryColor,
+                pointBackgroundColor: this.primaryColor,
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: this.primaryColor,
+            };
+            for (const row of data) {
+                for (let [k, v] of Object.entries(row)) {
+                    labels.push(k);
+                    dataset.data.push(v);
+                    break;
+                }
+            }
+            this.characterDatabase.chartData[characterName] = {
+                labels: labels,
+                datasets: [dataset],
+            }
+        },
         createCharacterList() { // キャラクタタブ用のリストを作成する
             let res = [];
             for (const groupName in this.characterDatabase.characters) {
@@ -1379,7 +1421,7 @@ var app = new Vue({
             }
             this.characterDatabase.characterList = res;
         },
-        createColumnList() {
+        createColumnList() { // compareタブ用のリストを作成する
             let res = [];
             for (const dtype in this.characterDatabase.columns) {
                 const columns = this.characterDatabase.columns[dtype];
@@ -1389,6 +1431,28 @@ var app = new Vue({
                 }
             }
             this.characterDatabase.columnList = res;
+        },
+        initCharacterDatabaseChart() { // タブ選択/ファイル読み込み時にグラフの初期化を行う
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return;
+            const characterName = selectedRow.name;
+
+            if (Object.keys(this.characterDatabase.chartData).indexOf(characterName) == -1) return;
+
+            const data = this.characterDatabase.chartData[characterName];
+
+            this.setCharacterDatabaseGraphWH();
+
+            let cnv = document.querySelector("#cdbGraph");
+            if (cnv === null) return;
+            let ctx = cnv.getContext("2d");
+
+            let chart = this.characterDatabase.chart;
+            chart = new Chart(ctx, {
+                type: "radar",
+                data: data,
+                options: this.characterDatabase.chartOptions
+            });
         },
         clearCharacterDatabase() { // キャラクタDBのデータクリア
             this.characterDatabase.characters = {};
@@ -1401,11 +1465,14 @@ var app = new Vue({
                 this.clearCharacterDatabase();
                 for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
                     await this.createCharacterPage(sheetName);
+                    await this.createCharacterChartData(sheetName);
                 }
                 await this.createCharacterList();
                 await this.createColumnList();
+                await this.initCharacterDatabaseChart();
                 this.characterDatabase.state.ready = true;
                 this.characterDatabase.mainTab = 1;
+                this.characterDatabase.dataTab = 0;
             }
         }
     },

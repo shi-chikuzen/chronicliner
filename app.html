@@ -528,6 +528,7 @@
                                             vertical
                                             v-model="characterDatabase.characterListSelected"
                                             color="primary"
+                                            @change="initCharacterDatabaseChart"
                                             >
                                                 <v-tab
                                                 v-for="(row, index) in characterDatabase.characterList"
@@ -541,10 +542,12 @@
                                                     <v-card-title>
                                                         {{currentCharacter.name}}
                                                     </v-card-title>
-                                                    <v-tabs v-model="characterDatabase.dataTab">
+                                                    <v-tabs
+                                                    v-model="characterDatabase.dataTab"
+                                                    >
                                                         <v-tab>TABLE</v-tab>
                                                         <v-tab>TIMELINE</v-tab>
-                                                        <v-tab>GRAPH</v-tab>
+                                                        <v-tab @change="initCharacterDatabaseChart">GRAPH</v-tab>
                                                     </v-tabs>
                                                     <v-window v-model="characterDatabase.dataTab">
                                                         <v-window-item>
@@ -579,7 +582,15 @@
                                                                 </template>
                                                             </v-data-table>
                                                         </v-window-item>
-                                                        <v-window-item></v-window-item>
+                                                        <v-window-item
+                                                        class="mt-5"
+                                                        eager="true">
+                                                            <div id="cdbGraphParent">
+                                                                <canvas
+                                                                id="cdbGraph">
+                                                                </canvas>
+                                                            </div>
+                                                        </v-window-item>
                                                     </v-window>
                                                 </v-col>
                                                 <v-col cols="6"></v-col>
@@ -614,7 +625,6 @@
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
         <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
-        <script src="https://unpkg.com/vue-chartjs@3.5.1/dist/vue-chartjs.min.js"></script>
         <script type="text/javascript" src="./js/app.js"></script>
     </body>
 </html>
