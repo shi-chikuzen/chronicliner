@@ -593,17 +593,31 @@
                                                         </v-window-item>
                                                     </v-window>
                                                 </v-col>
-                                                <v-col cols="6" class="mt-5">
+                                                <v-col cols="6">
                                                     <v-carousel
                                                     hide-delimiter-background="true"
                                                     height="auto"
-                                                    model="characterDatabase.imgSelected">
+                                                    v-model="characterDatabase.imgSelected"
+                                                    class="mt-5 mb-2">
                                                         <v-carousel-item
                                                         v-for="(item, index) in characterDatabaseImages"
                                                         :key="`cdbImages_${index}`"
                                                         :src="item.src">
                                                         </v-carousel-item>
                                                     </v-carousel>
+                                                    <v-row dense="true">
+                                                        <v-col
+                                                        v-for="(item, index) of  characterDatabaseImages"
+                                                        :key="`cdbImagesIcon_${index}`"
+                                                        class="d-flex child-flex"
+                                                        cols="2">
+                                                            <v-img
+                                                            :src="item.src"
+                                                            aspect-ratio="1"
+                                                            class="grey lighten-2"
+                                                            @click.native="characterDatabase.imgSelected = index;"></v-img>
+                                                        </v-col>
+                                                    </v-row>
                                                 </v-col>
                                             </v-row>
                                         </v-col>

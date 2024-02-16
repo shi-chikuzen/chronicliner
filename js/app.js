@@ -1482,7 +1482,7 @@ var app = new Vue({
                 this.characterDatabase.mainTab = 1;
                 this.characterDatabase.dataTab = 0;
             }
-        }
+        },
     },
 });
 
