@@ -85,9 +85,19 @@ var app = new Vue({
             chartOptions: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scale: {
-                    ticks: {
+                plugins: {
+                    legend: {
+                        display:false,
+                    }
+                },
+                scales: {
+                    r: {
                         beginAtZero: true,
+                        pointLabels: {
+                            font: {
+                                size: 14
+                            }
+                        }
                     }
                 }
             },
@@ -138,9 +148,15 @@ var app = new Vue({
             for (const dtype of dtypes) {
                 const df = data[dtype];
                 if (df.length == 0) continue;
+
                 for (const row of df) {
                     for (let [k, v] of Object.entries(row)) {
-                        res.push({ "index": k, "value": v, "dtype": dtype });
+                        let displayLimit = this.defaults.displayLimit["hour"];
+                        if (dtype == "date") {
+                            if (v.getHours() != 0) displayLimit = this.defaults.displayLimit["minute"];
+                            if (v.getMinutes() != 0) displayLimit = this.defaults.displayLimit["second"];
+                        }
+                        res.push({ "index": k, "value": v, "dtype": dtype, "displayLimit": displayLimit });
                         break;
                     }
                 }
@@ -172,7 +188,8 @@ var app = new Vue({
                     for (const event of events) {
                         const item = {
                             date: row.date,
-                            category: (event.category == characterName) ? "キャラクター" : event.category,
+                            displayLimit: row.displayLimit,
+                            category: (event.category == characterName) ? "キャラクター" : ((event.category == "all")? "共通":event.category),
                             title: event.title,
                         };
                         res.push(item);
@@ -292,6 +309,14 @@ var app = new Vue({
         getRowIndex(row) {
             const rowDisplayed = this.timelineData.filter((row) => row.show);
             return rowDisplayed.indexOf(row);
+        },
+        strftime(date, displayLimit = 2) {
+            if (displayLimit == 0) return String(date.getFullYear());
+            if (displayLimit == 1) return `${date.getFullYear()}/${date.getMonth() + 1}`;
+            if (displayLimit == 2) return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+            if (displayLimit == 3) return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:00`;
+            if (displayLimit == 4) return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
+            return date.toLocaleDateString();
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -1374,7 +1399,7 @@ var app = new Vue({
                 }
                 const index = row[colNames.index];
                 if (dtype == "date") {
-                    value = this.resetDateFromLimit(this.formatDate(value), "hour");
+                    value = this.formatDate(value);
                 }
                 data[dtype].push({ [index]: value });
                 if (this.characterDatabase.columns[dtype].indexOf(index) == -1) {
@@ -1453,14 +1478,18 @@ var app = new Vue({
 
             let cnv = document.querySelector("#cdbGraph");
             if (cnv === null) return;
-            let ctx = cnv.getContext("2d");
 
-            let chart = this.characterDatabase.chart;
-            chart = new Chart(ctx, {
-                type: "radar",
-                data: data,
-                options: this.characterDatabase.chartOptions
-            });
+            if (this.characterDatabase.chart === null) {
+                let ctx = cnv.getContext("2d");
+                this.characterDatabase.chart = new Chart(ctx, {
+                    type: "radar",
+                    data: data,
+                    options: this.characterDatabase.chartOptions
+                });
+            } else {
+                this.characterDatabase.chart.data = data;
+                this.characterDatabase.chart.update();
+            }
         },
         clearCharacterDatabase() { // キャラクタDBのデータクリア
             this.characterDatabase.characters = {};
