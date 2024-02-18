@@ -1531,10 +1531,18 @@ var app = new Vue({
                 for (const colName of colNames) {
                     data.push((Object.keys(df).indexOf(colName) == -1) ? null : df[colName]);
                 }
+                const colorIndex = datasets.length % this.defaults.color.length;
+                const color = this.defaults.color[colorIndex];
                 let dataset = {
                     label: characterName,
                     data: data,
                     fill: false,
+                    backgroundColor: color,
+                    borderColor: color,
+                    pointBackgroundColor: color,
+                    pointBorderColor: color,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: color,
                 }
                 datasets.push(dataset);
             }
