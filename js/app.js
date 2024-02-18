@@ -296,6 +296,7 @@ var app = new Vue({
         characterDatabaseWorkbook: "initCharacterDatabase",
         characterSelected: 'update',
         tagBulkMode: 'changeTagBulkMode',
+        "state.showCharacterDB": 'undisplayDisplaySetting',
     },
     methods: {
         // Utils
@@ -1668,6 +1669,9 @@ var app = new Vue({
             const colIndex = this.characterDatabase.columnList.indexOf(column);
             this.characterDatabase.mainTab = 2;
             this.characterDatabase.columnListSelected = colIndex;
+        },
+        undisplayDisplaySetting() { // display settingを非表示にする
+            this.state.showDisplaySetting = false;
         }
     },
 });
