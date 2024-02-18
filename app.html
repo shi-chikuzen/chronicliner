@@ -266,7 +266,8 @@
                                                                 v-show="intersection(category.characters, characterSelected).length > 0"
                                                                 :colspan="intersection(category.characters, characterSelected).length * 2"
                                                                 :style="'background-color: ' + category.color + '; border: thin solid white;'"
-                                                                class="white--text">
+                                                                class="white--text"
+                                                                >
                                                                     {{ name }}
                                                                 </th>
                                                             </template>
@@ -275,7 +276,8 @@
                                                             <template v-for="th in timelineHeaders">
                                                                 <th
                                                                 :style="'width: ' + th.width + ';'"
-                                                                :class="th.class.join(' ')">
+                                                                :class="th.class.join(' ')"
+                                                                @click="characterClicked(th.text)">
                                                                     <span v-if="th.text == ''"></span>
                                                                     <span v-else>
                                                                         {{th.text}}<br>
@@ -557,6 +559,9 @@
                                                             :items="characterDatabaseItems"
                                                             group-by="dtype"
                                                             show-group-by>
+                                                                <template v-slot:item.index="{item}">
+                                                                    <span @click="columnClicked(item.index)">{{item.index}}</span>
+                                                                </template>
                                                                 <template
                                                                 v-slot:item.value="{item}">
                                                                     <span v-if="item.dtype == 'date'">
@@ -661,6 +666,9 @@
                                                     <v-data-table
                                                     :headers="characterDatabase.compareHeader"
                                                     :items="characterDatabaseCompareItems">
+                                                        <template v-slot:item.character="{item}">
+                                                            <span @click="characterClicked(item.character)">{{item.character}}</span>
+                                                        </template>
                                                         <template
                                                         v-slot:item.value="{item}">
                                                             <span v-if="item.dtype == 'date'">
@@ -691,7 +699,16 @@
                                                                 </v-col>
                                                             </v-row>
                                                             <v-row>
-                                                                <v-col cols="12"></v-col>
+                                                                <v-col cols="12">
+                                                                    <v-data-table
+                                                                    :headers="crossTabHeader"
+                                                                    :items="crossTabTableItem"
+                                                                    :group-by="characterDatabase.crossTabValue[0]"
+                                                                    :sort-by="characterDatabase.crossTabValue.slice(-2)"
+                                                                    multi-sort
+                                                                    show-group-by>
+                                                                    </v-data-table>
+                                                                </v-col>
                                                             </v-row>
                                                         </v-window-item>
                                                         <v-window-item eager="true">

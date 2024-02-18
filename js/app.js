@@ -242,6 +242,37 @@ var app = new Vue({
             res[2] = _.cloneDeep(columns_all);
             res[2] = res[2].filter((elem) => elem != this.characterDatabase.crossTabValue[0] && elem != this.characterDatabase.crossTabValue[1]);
             return res;
+        },
+        crossTabHeader: function () {
+            if (this.characterDatabase.crossTabValue[0] === null) return [];
+            let res = [{ text: "キャラクター", value: "character", groupable: false }];
+            for (const [index, colName] of this.characterDatabase.crossTabValue.entries()) {
+                if (colName === null) return res;
+                const column = this.characterDatabase.columnList.filter((columns) => columns.colName == colName)[0];
+                res.push({ text: colName, dtype: column.dtype, value: colName, groupable: (index == 0) });
+            }
+            return res;
+        },
+        crossTabTableItem: function () {
+            if (this.crossTabHeader.length < 2) return [];
+            let res = [];
+            const columns = this.crossTabHeader.slice(1);
+            const data = this.characterDatabase.data;
+            for (let [characterName, dtypeObj] of Object.entries(data)) {
+                let row = {"character": characterName};
+                let tmpVal = null;
+                columns.forEach((column) => {
+                    let value = dtypeObj[column.dtype][column.value];
+                    value = (value === undefined) ? null : value;
+                    if (column.dtype == "date") value = this.strftime(value);
+                    row[column.value] = value;
+                    tmpVal = (value === null)? tmpVal : value;
+                });
+                if (tmpVal !== null) {
+                    res.push(row);
+                }
+            }
+            return res;
         }
     },
     mounted: function () {
@@ -1623,6 +1654,21 @@ var app = new Vue({
             if (idx == 1) return;
             if (crossTabValue[1] == crossTabValue[0]) crossTabValue[1] = null;
         },
+        characterClicked(characterName) { // キャラクタページに遷移する
+            const characters = this.characterDatabase.characterList.filter((character) => character.name == characterName && !character.disabled);
+            if (characters.length == 0 || this.characterDatabaseWorkbook === null) return;
+            if (!this.state.showCharacterDB) this.state.showCharacterDB = true;
+            const character = characters[0];
+            const characterIndex = this.characterDatabase.characterList.indexOf(character);
+            this.characterDatabase.mainTab = 1;
+            this.characterDatabase.characterListSelected = characterIndex;
+        },
+        columnClicked(colName) { // 項目比較ページに遷移する
+            const column = this.characterDatabase.columnList.filter((column) => column.colName == colName && !column.disabled)[0];
+            const colIndex = this.characterDatabase.columnList.indexOf(column);
+            this.characterDatabase.mainTab = 2;
+            this.characterDatabase.columnListSelected = colIndex;
+        }
     },
 });
 
