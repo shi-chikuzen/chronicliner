@@ -680,7 +680,19 @@
                                                 <v-col cols="6" eager="true">
                                                     <v-window v-model="characterDatabase.compareTab">
                                                         <v-window-item>
-                                                            hoge
+                                                            <v-row class="mt-5">
+                                                                <v-col cols="4" v-for="cTabIdx in 3">
+                                                                    <v-select
+                                                                    v-model="characterDatabase.crossTabValue[cTabIdx - 1]"
+                                                                    :items="crossTabItems[cTabIdx - 1]"
+                                                                    :label="`項目${cTabIdx}`"
+                                                                    @change="resetCrosstabDuplicatedValue(cTabIdx - 1)"
+                                                                    dense="true"></v-select>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <v-row>
+                                                                <v-col cols="12"></v-col>
+                                                            </v-row>
                                                         </v-window-item>
                                                         <v-window-item eager="true">
                                                             <div

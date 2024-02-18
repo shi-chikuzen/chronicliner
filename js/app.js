@@ -110,8 +110,7 @@ var app = new Vue({
             chartData: {},
             compareChartData: {},
             chartWidth: 0,
-            
-
+            crossTabValue: [null, null, null]
         }
     },
     computed: {
@@ -228,6 +227,21 @@ var app = new Vue({
         },
         compareTabBtnMsg: function () {
             return (this.characterDatabase.compareTab == 0) ? "レーダー表示" : "クロス集計表示";
+        },
+        crossTabItems: function () {
+            let res = [[], [], []];
+            columns_all = []
+            for (let [dtype, columns] of Object.entries(this.characterDatabase.columns)) {
+                columns_all = columns_all.concat(columns);
+            }
+            res[0] = _.cloneDeep(columns_all);
+            if (this.characterDatabase.crossTabValue[0] === null) return res;
+            res[1] = _.cloneDeep(columns_all);
+            res[1] = res[1].filter((elem) => elem != this.characterDatabase.crossTabValue[0]);
+            if (this.characterDatabase.crossTabValue[1] === null) return res;
+            res[2] = _.cloneDeep(columns_all);
+            res[2] = res[2].filter((elem) => elem != this.characterDatabase.crossTabValue[0] && elem != this.characterDatabase.crossTabValue[1]);
+            return res;
         }
     },
     mounted: function () {
@@ -1598,7 +1612,17 @@ var app = new Vue({
             } else {
                 this.characterDatabase.compareTab = 1;
             };
-        }
+        },
+        resetCrosstabDuplicatedValue(idx) { // 選択フォームで同値選択が行われた際、下位のフォームの値をリセットする
+            let crossTabValue = this.characterDatabase.crossTabValue;
+            if (idx == 2) return;
+            if (
+                (crossTabValue[2] == crossTabValue[1]) ||
+                (crossTabValue[2] == crossTabValue[0])
+            ) crossTabValue[2] = null;
+            if (idx == 1) return;
+            if (crossTabValue[1] == crossTabValue[0]) crossTabValue[1] = null;
+        },
     },
 });
 
