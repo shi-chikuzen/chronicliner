@@ -488,10 +488,10 @@
                         class="d-flex justify-end">
                             <v-tab>FILE</v-tab>
                             <v-tab :disabled="!characterDatabase.state.ready">CHARACTER</v-tab>
-                            <v-tab :disabled="!this.characterDatabase.state.ready">COMPARE</v-tab>
+                            <v-tab :disabled="!this.characterDatabase.state.ready" @click.native="initCharacterDatabaseChart">COMPARE</v-tab>
                         </v-tabs>
                         <v-card-text>
-                            <v-window v-model="characterDatabase.mainTab">
+                            <v-window v-model="characterDatabase.mainTab" @change="setCharacterDatabaseChartWH">
                                 <!-- file -->
                                 <v-window-item class="pt-5">
                                     <v-row class="d-flex justify-center">
@@ -542,12 +542,13 @@
                                                     <v-card-title>
                                                         {{currentCharacter.name}}
                                                     </v-card-title>
+                                                    <v-card-text class="text-caption">{{currentCharacter.caption}}</v-card-text>
                                                     <v-tabs
                                                     v-model="characterDatabase.dataTab"
                                                     >
                                                         <v-tab>TABLE</v-tab>
                                                         <v-tab>TIMELINE</v-tab>
-                                                        <v-tab @change="initCharacterDatabaseChart">GRAPH</v-tab>
+                                                        <v-tab @change="initCharacterDatabaseChart">CHART</v-tab>
                                                     </v-tabs>
                                                     <v-window v-model="characterDatabase.dataTab">
                                                         <v-window-item>
@@ -585,9 +586,9 @@
                                                         <v-window-item
                                                         class="mt-5"
                                                         eager="true">
-                                                            <div id="cdbGraphParent">
+                                                            <div id="cdbChartParent">
                                                                 <canvas
-                                                                id="cdbGraph">
+                                                                id="cdbChart">
                                                                 </canvas>
                                                             </div>
                                                         </v-window-item>
@@ -638,7 +639,60 @@
                                                 >{{row.colName}}</v-tab>
                                             </v-tabs>
                                         </v-col>
-                                        <v-col cols="8"></v-col>
+                                        <v-col cols="10">
+                                            <v-row>
+                                                <v-col cols="6">
+                                                    <div class="d-flex justify-space-between align-center">
+                                                        <v-card-title>
+                                                            {{currentColumnName}}
+                                                        </v-card-title>
+                                                        <v-btn
+                                                        @click="changeCompareTabValue"
+                                                        class="ma-2"
+                                                        outlined
+                                                        rounded>
+                                                            {{compareTabBtnMsg}}
+                                                            <v-icon right>
+                                                                mdi-chevron-right
+                                                            </v-icon>
+                                                        </v-btn>
+                                                    </div>
+                                                    <v-card-text class="text-caption">データ型: {{currentColumnDtype}}</v-card-text>
+                                                    <v-data-table
+                                                    :headers="characterDatabase.compareHeader"
+                                                    :items="characterDatabaseCompareItems">
+                                                        <template
+                                                        v-slot:item.value="{item}">
+                                                            <span v-if="item.dtype == 'date'">
+                                                                {{strftime(item.value, item.displayLimit)}}
+                                                            </span>
+                                                            <span v-else-if="item.dtype == 'color'">
+                                                                <v-chip :color="item.value">
+                                                                    {{item.value}}
+                                                                </v-chip>
+                                                            </span>
+                                                            <span v-else>
+                                                                {{item.value}}
+                                                            </span>
+                                                        </template>
+                                                    </v-data-table>
+                                                </v-col>
+                                                <v-col cols="6" eager="true">
+                                                    <v-window v-model="characterDatabase.compareTab">
+                                                        <v-window-item>
+                                                            hoge
+                                                        </v-window-item>
+                                                        <v-window-item eager="true">
+                                                            <div
+                                                            class="mt-5"
+                                                            id="cdbCompareChartParent">
+                                                                <canvas id="cdbCompareChart"></canvas>
+                                                            </div>
+                                                        </v-window-item>
+                                                    </v-window>
+                                                </v-col>
+                                            </v-row>
+                                        </v-col>
                                     </v-row>
                                 </v-window-item>
                             </v-window>

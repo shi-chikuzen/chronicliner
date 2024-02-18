@@ -60,6 +60,7 @@ var app = new Vue({
             width: 500,
             mainTab: null,
             dataTab: null,
+            compareTab: null,
             fileSelected: null,
             characterListSelected: null,
             columnListSelected: null,
@@ -76,18 +77,23 @@ var app = new Vue({
                 { text: "カテゴリ", value: "category" },
                 { text: "タイトル", value: "title" }
             ],
+            compareHeader: [
+                { text: "キャラクター", value: "character" },
+                { text: "値", value:"value"}
+            ],
             state: { ready: false, fileError: false },
             characters: {},
-            template: {"img": [], "date": [], "data": [], "graph": [], "group": "登録グループなし", "color": [],},
-            columns: { "color":[], "date": [], "data":[], "graph":[], },
+            template: {"img": [], "date": {}, "data": {}, "chart": {}, "group": "登録グループなし", "color": {}, "caption": ""},
+            columns: { "color":[], "date": [], "data":[], "chart":[], },
             data: {},
             chart: null,
+            compareChart: null,
             chartOptions: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display:false,
+                        display: false,
                     }
                 },
                 scales: {
@@ -102,7 +108,10 @@ var app = new Vue({
                 }
             },
             chartData: {},
+            compareChartData: {},
             chartWidth: 0,
+            
+
         }
     },
     computed: {
@@ -124,18 +133,39 @@ var app = new Vue({
         numRows: function () {
             return this.timelineData.filter((row) => row.show).length;
         },
+        // ###############################
+        // Character Database
+        // ###############################
         currentCharacter: function () {
             const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected];
             if (selectedRow === undefined) return this.characterDatabase.template;
             return this.characterDatabase.data[selectedRow.name];
         },
-        currentColumnRows: function () {
+        currentColumnName: function () {
+            const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
+            if (selectedColumn === undefined) return "";
+            return selectedColumn.colName;
+        },
+        currentColumnDtype: function () {
+            const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
+            if (selectedColumn === undefined) return "";
+            return selectedColumn.dtype;
+        },
+        characterDatabaseCompareItems: function () {
             const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
             if (selectedColumn === undefined) return [];
 
             const colName = selectedColumn.colName;
             const dtype = selectedColumn.dtype;
-            return [];
+            const data = this.characterDatabase.data;
+            let res = [];
+
+            for (let [characterName, dtypeObj] of Object.entries(data)) {
+                const df = dtypeObj[dtype];
+                if (Object.keys(df).indexOf(colName) == -1) continue;
+                res.push({ "character": characterName, "value": df[colName], "dtype": dtype });
+            }
+            return res;
         },
         characterDatabaseItems: function () {
             const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
@@ -149,16 +179,13 @@ var app = new Vue({
                 const df = data[dtype];
                 if (df.length == 0) continue;
 
-                for (const row of df) {
-                    for (let [k, v] of Object.entries(row)) {
-                        let displayLimit = this.defaults.displayLimit["hour"];
-                        if (dtype == "date") {
-                            if (v.getHours() != 0) displayLimit = this.defaults.displayLimit["minute"];
-                            if (v.getMinutes() != 0) displayLimit = this.defaults.displayLimit["second"];
-                        }
-                        res.push({ "index": k, "value": v, "dtype": dtype, "displayLimit": displayLimit });
-                        break;
+                for (let [k, v] of Object.entries(df)) {
+                    let displayLimit = this.defaults.displayLimit["hour"];
+                    if (dtype == "date") {
+                        if (v.getHours() != 0) displayLimit = this.defaults.displayLimit["minute"];
+                        if (v.getMinutes() != 0) displayLimit = this.defaults.displayLimit["second"];
                     }
+                    res.push({ "index": k, "value": v, "dtype": dtype, "displayLimit": displayLimit });
                 }
             }
             return res;
@@ -199,6 +226,9 @@ var app = new Vue({
 
             return res;
         },
+        compareTabBtnMsg: function () {
+            return (this.characterDatabase.compareTab == 0) ? "レーダー表示" : "クロス集計表示";
+        }
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
@@ -1188,7 +1218,7 @@ var app = new Vue({
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
             this.setCharacterDatabaseWidth();
-            this.setCharacterDatabaseGraphWH();
+            this.setCharacterDatabaseChartWH();
         }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
             this.yearSummary[year].summarize = !this.yearSummary[year].summarize;
@@ -1337,12 +1367,16 @@ var app = new Vue({
         setCharacterDatabaseWidth() {
             this.characterDatabase.width = window.innerWidth*0.75;
         },
-        setCharacterDatabaseGraphWH() {
-            let cdbParent = document.querySelector("#cdbGraphParent")
-            if (cdbParent === null) return;
-            const width = cdbParent.parentElement.clientWidth;
+        setCharacterDatabaseChartWH() {
+            let cdbParent = document.querySelector("#cdbChartParent");
+            let cdbCompareParent = document.querySelector("#cdbCompareChartParent");
+            let parentElement = (cdbParent !== null) ? cdbParent : cdbCompareParent;
+            if (parentElement === null) return;
+
+            const width = parentElement.parentElement.clientWidth;
             if (width != 0) { this.characterDatabase.chartWidth = width };
-            cdbParent.style.height = `${this.characterDatabase.chartWidth}px`;
+            if (cdbParent !== null) cdbParent.style.height = `${this.characterDatabase.chartWidth}px`;
+            if (cdbCompareParent !== null) cdbCompareParent.style.height = `${this.characterDatabase.chartWidth * 1.2}px`;
         },
         readCharacterDatabaseFile: function (file) { // xlsx読み込み
             const vm = this;
@@ -1390,8 +1424,8 @@ var app = new Vue({
                 }
                 data.name = characterName;
                 let value = row[colNames.value];
-                if (dtype == "group") {
-                    data.group = value;
+                if (dtype == "group" || dtype == "caption") {
+                    data[dtype] = value;
                     continue;
                 }  else if (dtype == "img") {
                     data.img.push({ src: value });
@@ -1401,7 +1435,7 @@ var app = new Vue({
                 if (dtype == "date") {
                     value = this.formatDate(value);
                 }
-                data[dtype].push({ [index]: value });
+                data[dtype][index] = value;
                 if (this.characterDatabase.columns[dtype].indexOf(index) == -1) {
                     this.characterDatabase.columns[dtype].push(index);
                 }
@@ -1417,7 +1451,7 @@ var app = new Vue({
             this.characterDatabase.data[characterName] = data;
         },
         createCharacterChartData(characterName) { // chart用データを作成
-            const data = this.characterDatabase.data[characterName].graph;
+            const data = this.characterDatabase.data[characterName].chart;
             if (data.length == 0) return;
 
             let labels = [];
@@ -1427,20 +1461,40 @@ var app = new Vue({
                 backgroundColor: this.primaryColorAlpha,
                 borderColor: this.primaryColor,
                 pointBackgroundColor: this.primaryColor,
-                pointBorderColor: '#fff',
+                pointBorderColor: this.primaryColor,
                 pointHoverBackgroundColor: '#fff',
                 pointHoverBorderColor: this.primaryColor,
             };
-            for (const row of data) {
-                for (let [k, v] of Object.entries(row)) {
-                    labels.push(k);
-                    dataset.data.push(v);
-                    break;
-                }
+            for (let [k, v] of Object.entries(data)) {
+                labels.push(k);
+                dataset.data.push(v);
             }
             this.characterDatabase.chartData[characterName] = {
                 labels: labels,
                 datasets: [dataset],
+            }
+        },
+        createCompareChartData() {
+            const colNames = this.characterDatabase.columns.chart;
+            let datasets = [];
+            for (const character of this.characterDatabase.characterList) {
+                if (character.disabled) continue;
+                const characterName = character.name;
+                let data = [];
+                const df = this.characterDatabase.data[characterName].chart;
+                for (const colName of colNames) {
+                    data.push((Object.keys(df).indexOf(colName) == -1) ? null : df[colName]);
+                }
+                let dataset = {
+                    label: characterName,
+                    data: data,
+                    fill: false,
+                }
+                datasets.push(dataset);
+            }
+            this.characterDatabase.compareChartData = {
+                labels: colNames,
+                datasets: datasets,
             }
         },
         createCharacterList() { // キャラクタタブ用のリストを作成する
@@ -1466,19 +1520,18 @@ var app = new Vue({
             this.characterDatabase.columnList = res;
         },
         initCharacterDatabaseChart() { // タブ選択/ファイル読み込み時にグラフの初期化を行う
-            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected];
             if (selectedRow === undefined) return;
-            const characterName = selectedRow.name;
 
+            const characterName = selectedRow.name;
             if (Object.keys(this.characterDatabase.chartData).indexOf(characterName) == -1) return;
 
-            const data = this.characterDatabase.chartData[characterName];
-
-            this.setCharacterDatabaseGraphWH();
-
-            let cnv = document.querySelector("#cdbGraph");
+            let cnv = document.querySelector("#cdbChart");
             if (cnv === null) return;
 
+            this.setCharacterDatabaseChartWH();
+
+            const data = this.characterDatabase.chartData[characterName];
             if (this.characterDatabase.chart === null) {
                 let ctx = cnv.getContext("2d");
                 this.characterDatabase.chart = new Chart(ctx, {
@@ -1491,6 +1544,28 @@ var app = new Vue({
                 this.characterDatabase.chart.update();
             }
         },
+        initCharacterDatabaseCompareChart() {
+            let cnv = document.querySelector("#cdbCompareChart");
+            if (cnv == null) return;
+
+            this.setCharacterDatabaseChartWH();
+
+            if (this.characterDatabase.compareChart === null) {
+                let options = _.cloneDeep(this.characterDatabase.chartOptions);
+                options.plugins.legend.display = true;
+                options.plugins.colorschemas = {};
+                options.plugins.colorschemas.scheme = "tableau.HueCircle19";
+                let ctx = cnv.getContext("2d");
+                this.characterDatabase.compareChart = new Chart(ctx, {
+                    type: "radar",
+                    data: this.characterDatabase.compareChartData,
+                    options: options
+                });
+            } else {
+                this.characterDatabase.compareChart.data = this.characterDatabase.compareChartData;
+                this.characterDatabase.compareChart.update();
+            }
+        },
         clearCharacterDatabase() { // キャラクタDBのデータクリア
             this.characterDatabase.characters = {};
             this.characterDatabase.characterList = [];
@@ -1499,6 +1574,7 @@ var app = new Vue({
         },
         async initCharacterDatabase() { // キャラクターDBの初期化
             if (this.validCdbData) {
+                this.state.message = [];
                 this.clearCharacterDatabase();
                 for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
                     await this.createCharacterPage(sheetName);
@@ -1507,11 +1583,22 @@ var app = new Vue({
                 await this.createCharacterList();
                 await this.createColumnList();
                 await this.initCharacterDatabaseChart();
+                await this.createCompareChartData();
+                await this.initCharacterDatabaseCompareChart();
                 this.characterDatabase.state.ready = true;
                 this.characterDatabase.mainTab = 1;
                 this.characterDatabase.dataTab = 0;
             }
         },
+        changeCompareTabValue() { // 比較ページの表示切り替えボタン押下時、表示を変更&初期化
+            this.setCharacterDatabaseChartWH();
+            this.initCharacterDatabaseCompareChart();
+            if (this.characterDatabase.compareTab == 1) {
+                this.characterDatabase.compareTab = 0;
+            } else {
+                this.characterDatabase.compareTab = 1;
+            };
+        }
     },
 });
 
