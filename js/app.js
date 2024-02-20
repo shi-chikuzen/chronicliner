@@ -110,7 +110,8 @@ var app = new Vue({
             chartData: {},
             compareChartData: {},
             chartWidth: 0,
-            crossTabValue: [null, null, null]
+            crossTabValue: [null, null, null],
+            currentColor: "",
         }
     },
     computed: {
@@ -1441,8 +1442,9 @@ var app = new Vue({
                 this.state.message.push("エクセルファイルにキャラクターが登録されていません");
                 valid = false;
             }
+            console.log(sheetNames)
             for (let sheetName of sheetNames) {
-                const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[sheetName], { header: 1 });
+                const data = XLSX.utils.sheet_to_json(this.characterDatabaseWorkbook.Sheets[sheetName], { header: 1 });
                 const colNames = Object.values(this.defaults.characterDatabase);
                 for (let colName of colNames) {
                     if (data[0].indexOf(colName) == -1) {
@@ -1464,8 +1466,8 @@ var app = new Vue({
             // 各行を処理
             for (let row of rawData) {
                 const dtype = row[colNames.dtype];
-                if (!dtype in dtypes) {
-                    this.state.message.push(`キャラクター${characterName}に設定されている以下のデータ型は無視されます：${dtype}`)
+                if (dtypes.indexOf(dtype) == -1) {
+                    this.state.message.push(`キャラクター「${characterName}」に使用できないデータ型が設定されています`)
                     continue;
                 }
                 data.name = characterName;
@@ -1627,7 +1629,7 @@ var app = new Vue({
             this.characterDatabase.columnList = [];
         },
         async initCharacterDatabase() { // キャラクターDBの初期化
-            if (this.validCdbData) {
+            if (this.validCdbData()) {
                 this.state.message = [];
                 this.clearCharacterDatabase();
                 for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
@@ -1642,6 +1644,10 @@ var app = new Vue({
                 this.characterDatabase.state.ready = true;
                 this.characterDatabase.mainTab = 1;
                 this.characterDatabase.dataTab = 0;
+            }
+            if (this.state.message.length > 0) {
+                this.state.message = Array.from(new Set(this.state.message));
+                this.state.errorSnack = true;
             }
         },
         changeCompareTabValue() { // 比較ページの表示切り替えボタン押下時、表示を変更&初期化
@@ -1680,6 +1686,9 @@ var app = new Vue({
         },
         undisplayDisplaySetting() { // display settingを非表示にする
             this.state.showDisplaySetting = false;
+        },
+        setCharacterDatabaseCurrentColor(color) {
+            this.characterDatabase.currentColor = color;
         }
     },
 });
