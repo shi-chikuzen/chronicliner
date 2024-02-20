@@ -265,7 +265,7 @@ var app = new Vue({
                 columns.forEach((column) => {
                     let value = dtypeObj[column.dtype][column.value];
                     value = (value === undefined) ? null : value;
-                    if (column.dtype == "date") value = this.strftime(value);
+                    if (column.dtype == "date" && value !== undefined) value = this.strftime(value);
                     row[column.value] = value;
                     tmpVal = (value === null)? tmpVal : value;
                 });
