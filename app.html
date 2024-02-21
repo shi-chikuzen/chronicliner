@@ -570,8 +570,8 @@
                                                                     <span v-else-if="item.dtype == 'color'">
                                                                         <v-tooltip right class="pa-0">
                                                                             <template v-slot:activator="{ on, attrs }">
-                                                                                <v-chip 
-                                                                                :color="item.value" 
+                                                                                <v-chip
+                                                                                :color="item.value"
                                                                                 v-on="on"
                                                                                 @mouseover="setCharacterDatabaseCurrentColor(item.value)">
                                                                                 {{item.value}}
@@ -686,9 +686,20 @@
                                                                 {{strftime(item.value, item.displayLimit)}}
                                                             </span>
                                                             <span v-else-if="item.dtype == 'color'">
-                                                                <v-chip :color="item.value">
-                                                                    {{item.value}}
-                                                                </v-chip>
+                                                                <v-tooltip right class="pa-0">
+                                                                    <template v-slot:activator="{ on, attrs }">
+                                                                        <v-chip
+                                                                        :color="item.value"
+                                                                        v-on="on"
+                                                                        @mouseover="setCharacterDatabaseCurrentColor(item.value)">
+                                                                        {{item.value}}
+                                                                        </v-chip>
+                                                                    </template>
+                                                                    <span>
+                                                                        <v-color-picker v-model="characterDatabase.currentColor"
+                                                                        dark></v-color-picker>
+                                                                    </span>
+                                                                </v-tooltip>
                                                             </span>
                                                             <span v-else>
                                                                 {{item.value}}
