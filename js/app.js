@@ -570,7 +570,7 @@ var app = new Vue({
             if (passed < 0 || data.died == true) return `background-color: ${this.defaults.backgroundColor};`;
             return `background-color: ${data.color};`;
         },
-        displayNofillArrow(row, data) {
+        displayNofillArrow(row, data) { // 行に塗りなしの矢印を表示するか
             const isHead = Object.is(row, this.yearRangeSummary.head);
             if (isHead) return false;
             const isTail = Object.is(row, this.yearRangeSummary.tail);
@@ -1093,7 +1093,7 @@ var app = new Vue({
             };
             this.timelineHeaders = headers;
         },
-        isEventTagsMatch2Row(mode, row) {
+        isEventTagsMatch2Row(mode, row) { // 行が現在の選択イベントタグにマッチするか
             // 処理スキップ
             if (row.summary == true) { return true; } // サマリー行の場合はreturn
             if (!this.tagBulkMode) {
@@ -1106,13 +1106,13 @@ var app = new Vue({
             if (targetTags.length === 0) { return true; }; // タグが選択されていない場合はreturn
             return this.intersection(targetTags, row.tags).length > 0;
         },
-        isEventTagsMatch2Card(summary, tags) {
+        isEventTagsMatch2Card(summary, tags) { // イベントカードが現在の選択イベントタグにマッチするか
             if (summary) return true;
             const currentTag = (this.tagBulkMode) ? this.tagSelected["master"] : this.tagSelected["event"];
             if (currentTag.length == 0) return true;
             return (this.intersection(currentTag, tags).length == 0) ? false : true;
         },
-        isYearMatch2DisplayRange(year) {
+        isYearMatch2DisplayRange(year) { // 年が現在の表示年範囲にマッチするか
             return (this.displaySetting.yearRange.value[0] <= year) && (year <= this.displaySetting.yearRange.value[1]);
         },
         updateTimelineData(mode=null) { // characterSelectedの更新に合わせてshowの状態を更新
@@ -1177,7 +1177,7 @@ var app = new Vue({
                 };
             };
         },
-        aggregateYearSummary(start, end, key) {
+        aggregateYearSummary(start, end, key) { // 年サマリーを集計する
             const targetYearRangeSummary = this.yearRangeSummary[key];
             targetYearRangeSummary.year = `${start} - ${end}`;
             targetYearRangeSummary.start = start;
@@ -1336,7 +1336,7 @@ var app = new Vue({
             });
             this.changeTagState(mode);
         },
-        changeTagBulkMode() {
+        changeTagBulkMode() { // タグ絞り込みモードを変更する
             if (this.tagBulkMode) {
                 this.changeTagState("master");
             } else {
@@ -1358,10 +1358,10 @@ var app = new Vue({
             };
             this.update(null);
         },
-        changeHighlightState() {
+        changeHighlightState() { // 重要イベントハイライトモードをトグルする
             this.state.highlightMode = !this.state.highlightMode;
         },
-        changeShowDisplaySettingState() {
+        changeShowDisplaySettingState() { // 表示設定画面の表示非表示をトグルする
             this.state.showDisplaySetting = !this.state.showDisplaySetting;
         },
         // Styling
@@ -1411,10 +1411,11 @@ var app = new Vue({
         // Character Data Base
         //########################
         //
-        setCharacterDatabaseWidth() {
+        // init
+        setCharacterDatabaseWidth() { // キャラクターデータベースの幅を設定する
             this.characterDatabase.width = window.innerWidth*0.75;
         },
-        setCharacterDatabaseChartWH() {
+        setCharacterDatabaseChartWH() { // レーダーチャートの縦幅を設定する
             let cdbParent = document.querySelector("#cdbChartParent");
             let cdbCompareParent = document.querySelector("#cdbCompareChartParent");
             let parentElement = (cdbParent !== null) ? cdbParent : cdbCompareParent;
@@ -1600,7 +1601,7 @@ var app = new Vue({
                 this.characterDatabase.chart.update();
             }
         },
-        initCharacterDatabaseCompareChart() {
+        initCharacterDatabaseCompareChart() { // 比較レーダーチャートを初期化する
             let cnv = document.querySelector("#cdbCompareChart");
             if (cnv == null) return;
 
@@ -1652,6 +1653,7 @@ var app = new Vue({
                 this.state.errorSnack = true;
             }
         },
+        // Display (User Triggered)
         changeCompareTabValue() { // 比較ページの表示切り替えボタン押下時、表示を変更&初期化
             this.setCharacterDatabaseChartWH();
             this.initCharacterDatabaseCompareChart();
@@ -1689,7 +1691,7 @@ var app = new Vue({
         undisplayDisplaySetting() { // display settingを非表示にする
             this.state.showDisplaySetting = false;
         },
-        setCharacterDatabaseCurrentColor(color) {
+        setCharacterDatabaseCurrentColor(color) { // カラーピッカーの色を設定する
             this.characterDatabase.currentColor = color;
         }
     },
