@@ -1633,8 +1633,10 @@ var app = new Vue({
                 this.state.message = [];
                 this.clearCharacterDatabase();
                 for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
-                    await this.createCharacterPage(sheetName);
-                    await this.createCharacterChartData(sheetName);
+                    if (sheetName != "TEMPLATE") {
+                        await this.createCharacterPage(sheetName);
+                        await this.createCharacterChartData(sheetName);
+                    }
                 }
                 await this.createCharacterList();
                 await this.createColumnList();
