@@ -544,7 +544,7 @@
                                                     <v-card-title>
                                                         {{currentCharacter.name}}
                                                     </v-card-title>
-                                                    <v-card-text class="text-caption">{{currentCharacter.caption}}</v-card-text>
+                                                    <v-card-text class="text-caption" v-text="currentCharacter.caption" style="white-space: pre-line;"></v-card-text>
                                                     <v-tabs
                                                     v-model="characterDatabase.dataTab"
                                                     >
