@@ -1,5 +1,4 @@
 // Copyright (c) 2022 @shi_chikuzen
-
 Vue.use(Vuetify);
 
 Vue.config.devtools = true;
@@ -19,9 +18,11 @@ var app = new Vue({
     el: '#app',
     vuetify: new Vuetify(),
     data: {
+        primaryColor: '#00aeb9',
+        primaryColorAlpha: "rgba(0, 174, 185, 0.2)",
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false},
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false, showCharacterDB: false},
         displaySetting: {
             showAccordion: true,
             yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},
@@ -41,7 +42,8 @@ var app = new Vue({
             "beforeAfter": { "以前": 0, "": 1, "期間": 1, "以降": 2 },
             "backgroundColor": "rgb(247, 248, 247)",
             "borderColor": "rgb(229, 229, 229)",
-            "summaryBackgroundColor": "#DADADA"
+            "summaryBackgroundColor": "#DADADA",
+            "characterDatabase": {"dtype": "データ型", "index": "項目名", "value": "値"},
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [], "tags": {"character": [], "event": [], "master": []} },
         characterSelected: [],
@@ -53,6 +55,64 @@ var app = new Vue({
         yearSummary: {},
         yearRangeSummary: {"head": {}, "tail":{}},
         tableHeight: 0,
+        characterDatabaseWorkbook: null,
+        characterDatabase: {
+            width: 500,
+            mainTab: null,
+            dataTab: null,
+            compareTab: null,
+            fileSelected: null,
+            characterListSelected: null,
+            columnListSelected: null,
+            imgSelected: null,
+            characterList: [],
+            columnList: [],
+            characterHeader: [
+                { text: "データ型", value:"dtype"},
+                { text: "項目名", value: "index", sortable: true, groupable: false,},
+                { text: "値", value: "value", sortable: true, groupable: false, }
+            ],
+            timelineHeader: [
+                { text: "日付", value: "date"},
+                { text: "カテゴリ", value: "category" },
+                { text: "タイトル", value: "title" }
+            ],
+            compareHeader: [
+                { text: "キャラクター", value: "character" },
+                { text: "値", value:"value"}
+            ],
+            state: { ready: false, fileError: false },
+            characters: {},
+            template: {"img": [], "date": {}, "data": {}, "chart": {}, "group": "登録グループなし", "color": {}, "caption": ""},
+            columns: { "color":[], "date": [], "data":[], "chart":[], },
+            data: {},
+            chart: null,
+            compareChart: null,
+            chartOptions: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false,
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        pointLabels: {
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                }
+            },
+            chartData: {},
+            compareChartData: {},
+            chartWidth: 0,
+            crossTabValue: [null, null, null],
+            currentColor: "",
+        }
     },
     computed: {
         snackMessage: function () {
@@ -72,12 +132,158 @@ var app = new Vue({
         },
         numRows: function () {
             return this.timelineData.filter((row) => row.show).length;
+        },
+        // ###############################
+        // Character Database
+        // ###############################
+        currentCharacter: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected];
+            if (selectedRow === undefined) return this.characterDatabase.template;
+            return this.characterDatabase.data[selectedRow.name];
+        },
+        currentColumnName: function () {
+            const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
+            if (selectedColumn === undefined) return "";
+            return selectedColumn.colName;
+        },
+        currentColumnDtype: function () {
+            const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
+            if (selectedColumn === undefined) return "";
+            return selectedColumn.dtype;
+        },
+        characterDatabaseCompareItems: function () {
+            const selectedColumn = this.characterDatabase.columnList[this.characterDatabase.columnListSelected];
+            if (selectedColumn === undefined) return [];
+
+            const colName = selectedColumn.colName;
+            const dtype = selectedColumn.dtype;
+            const data = this.characterDatabase.data;
+            let res = [];
+
+            for (let [characterName, dtypeObj] of Object.entries(data)) {
+                const df = dtypeObj[dtype];
+                if (Object.keys(df).indexOf(colName) == -1) continue;
+                res.push({ "character": characterName, "value": df[colName], "dtype": dtype });
+            }
+            return res;
+        },
+        characterDatabaseItems: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return [];
+
+            let res = [];
+            const characterName = selectedRow.name;
+            const data = this.characterDatabase.data[characterName];
+            const dtypes = Object.keys(this.characterDatabase.columns);
+            for (const dtype of dtypes) {
+                const df = data[dtype];
+                if (df.length == 0) continue;
+
+                for (let [k, v] of Object.entries(df)) {
+                    let displayLimit = this.defaults.displayLimit["hour"];
+                    if (dtype == "date") {
+                        if (v.getHours() != 0) displayLimit = this.defaults.displayLimit["minute"];
+                        if (v.getMinutes() != 0) displayLimit = this.defaults.displayLimit["second"];
+                    }
+                    res.push({ "index": k, "value": v, "dtype": dtype, "displayLimit": displayLimit });
+                }
+            }
+            return res;
+        },
+        characterDatabaseImages: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return [];
+
+            const characterName = selectedRow.name;
+            const data = this.characterDatabase.data[characterName];
+            return data.img;
+        },
+        characterDatabaseTimelineItems: function () {
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected]
+            if (selectedRow === undefined) return [];
+
+            const characterName = selectedRow.name;
+            if (this.data.characters.indexOf(characterName) == -1) return [];
+
+            let res = [];
+            this.timelineData.forEach((row) => {
+                if (
+                    !row.summary &&
+                    (row.characters.indexOf(characterName) != -1)
+                ) {
+                    const events = row[`${characterName}_ev`];
+                    for (const event of events) {
+                        const item = {
+                            date: row.date,
+                            displayLimit: row.displayLimit,
+                            category: (event.category == characterName) ? "キャラクター" : ((event.category == "all")? "共通":event.category),
+                            title: event.title,
+                        };
+                        res.push(item);
+                    }
+                }
+            });
+
+            return res;
+        },
+        compareTabBtnMsg: function () {
+            return (this.characterDatabase.compareTab == 0) ? "レーダー表示" : "クロス集計表示";
+        },
+        crossTabItems: function () {
+            let res = [[], [], []];
+            columns_all = []
+            for (let [dtype, columns] of Object.entries(this.characterDatabase.columns)) {
+                columns_all = columns_all.concat(columns);
+            }
+            res[0] = _.cloneDeep(columns_all);
+            if (this.characterDatabase.crossTabValue[0] === null) return res;
+            res[1] = _.cloneDeep(columns_all);
+            res[1] = res[1].filter((elem) => elem != this.characterDatabase.crossTabValue[0]);
+            if (this.characterDatabase.crossTabValue[1] === null) return res;
+            res[2] = _.cloneDeep(columns_all);
+            res[2] = res[2].filter((elem) => elem != this.characterDatabase.crossTabValue[0] && elem != this.characterDatabase.crossTabValue[1]);
+            return res;
+        },
+        crossTabHeader: function () {
+            if (this.characterDatabase.crossTabValue[0] === null) return [];
+            let res = [{ text: "キャラクター", value: "character", groupable: false }];
+            for (const [index, colName] of this.characterDatabase.crossTabValue.entries()) {
+                if (colName === null) return res;
+                const column = this.characterDatabase.columnList.filter((columns) => columns.colName == colName)[0];
+                res.push({ text: colName, dtype: column.dtype, value: colName, groupable: (index == 0) });
+            }
+            return res;
+        },
+        crossTabTableItem: function () {
+            if (this.crossTabHeader.length < 2) return [];
+            let res = [];
+            const columns = this.crossTabHeader.slice(1);
+            const data = this.characterDatabase.data;
+            for (let [characterName, dtypeObj] of Object.entries(data)) {
+                let row = {"character": characterName};
+                let tmpVal = null;
+                columns.forEach((column) => {
+                    let value = dtypeObj[column.dtype][column.value];
+                    value = (value === undefined) ? null : value;
+                    if (column.dtype == "date" && value !== undefined) value = this.strftime(value);
+                    row[column.value] = value;
+                    tmpVal = (value === null)? tmpVal : value;
+                });
+                if (tmpVal !== null) {
+                    res.push(row);
+                }
+            }
+            return res;
         }
     },
     mounted: function () {
         this.defaults.data = JSON.parse(JSON.stringify(this.data));
+        this.setCharacterDatabaseWidth();
         window.addEventListener("resize", this.windowResized);
         this.$nextTick(function () {
+            this.characterDatabase.chartWidth = ((
+                this.characterDatabase.width - 48
+            ) / 12 * 5) - 24;
             this.setTableHeight();
             this.replaceDisplaySettingSnackbar();
             this.state.showDisplaySetting = false;
@@ -88,8 +294,10 @@ var app = new Vue({
     },
     watch: {
         workbook: 'init',
+        characterDatabaseWorkbook: "initCharacterDatabase",
         characterSelected: 'update',
         tagBulkMode: 'changeTagBulkMode',
+        "state.showCharacterDB": 'undisplayDisplaySetting',
     },
     methods: {
         // Utils
@@ -178,6 +386,14 @@ var app = new Vue({
         getRowIndex(row) {
             const rowDisplayed = this.timelineData.filter((row) => row.show);
             return rowDisplayed.indexOf(row);
+        },
+        strftime(date, displayLimit = 2) {
+            if (displayLimit == 0) return String(date.getFullYear());
+            if (displayLimit == 1) return `${date.getFullYear()}/${date.getMonth() + 1}`;
+            if (displayLimit == 2) return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+            if (displayLimit == 3) return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:00`;
+            if (displayLimit == 4) return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
+            return date.toLocaleDateString();
         },
         // File
         readFile: function (file) { // xlsx読み込み
@@ -354,7 +570,7 @@ var app = new Vue({
             if (passed < 0 || data.died == true) return `background-color: ${this.defaults.backgroundColor};`;
             return `background-color: ${data.color};`;
         },
-        displayNofillArrow(row, data) {
+        displayNofillArrow(row, data) { // 行に塗りなしの矢印を表示するか
             const isHead = Object.is(row, this.yearRangeSummary.head);
             if (isHead) return false;
             const isTail = Object.is(row, this.yearRangeSummary.tail);
@@ -877,7 +1093,7 @@ var app = new Vue({
             };
             this.timelineHeaders = headers;
         },
-        isEventTagsMatch2Row(mode, row) {
+        isEventTagsMatch2Row(mode, row) { // 行が現在の選択イベントタグにマッチするか
             // 処理スキップ
             if (row.summary == true) { return true; } // サマリー行の場合はreturn
             if (!this.tagBulkMode) {
@@ -890,13 +1106,13 @@ var app = new Vue({
             if (targetTags.length === 0) { return true; }; // タグが選択されていない場合はreturn
             return this.intersection(targetTags, row.tags).length > 0;
         },
-        isEventTagsMatch2Card(summary, tags) {
+        isEventTagsMatch2Card(summary, tags) { // イベントカードが現在の選択イベントタグにマッチするか
             if (summary) return true;
             const currentTag = (this.tagBulkMode) ? this.tagSelected["master"] : this.tagSelected["event"];
             if (currentTag.length == 0) return true;
             return (this.intersection(currentTag, tags).length == 0) ? false : true;
         },
-        isYearMatch2DisplayRange(year) {
+        isYearMatch2DisplayRange(year) { // 年が現在の表示年範囲にマッチするか
             return (this.displaySetting.yearRange.value[0] <= year) && (year <= this.displaySetting.yearRange.value[1]);
         },
         updateTimelineData(mode=null) { // characterSelectedの更新に合わせてshowの状態を更新
@@ -961,7 +1177,7 @@ var app = new Vue({
                 };
             };
         },
-        aggregateYearSummary(start, end, key) {
+        aggregateYearSummary(start, end, key) { // 年サマリーを集計する
             const targetYearRangeSummary = this.yearRangeSummary[key];
             targetYearRangeSummary.year = `${start} - ${end}`;
             targetYearRangeSummary.start = start;
@@ -1048,6 +1264,8 @@ var app = new Vue({
         },
         windowResized: _.debounce( async function() { // windowサイズ変更時にtdの高さを設定し直す
             await this.setTableHeight();
+            this.setCharacterDatabaseWidth();
+            this.setCharacterDatabaseChartWH();
         }, 300),
         toggleYearSummaryShow(year) { // 要約行に切り替えるかどうかを設定
             this.yearSummary[year].summarize = !this.yearSummary[year].summarize;
@@ -1118,7 +1336,7 @@ var app = new Vue({
             });
             this.changeTagState(mode);
         },
-        changeTagBulkMode() {
+        changeTagBulkMode() { // タグ絞り込みモードを変更する
             if (this.tagBulkMode) {
                 this.changeTagState("master");
             } else {
@@ -1140,10 +1358,10 @@ var app = new Vue({
             };
             this.update(null);
         },
-        changeHighlightState() {
+        changeHighlightState() { // 重要イベントハイライトモードをトグルする
             this.state.highlightMode = !this.state.highlightMode;
         },
-        changeShowDisplaySettingState() {
+        changeShowDisplaySettingState() { // 表示設定画面の表示非表示をトグルする
             this.state.showDisplaySetting = !this.state.showDisplaySetting;
         },
         // Styling
@@ -1178,7 +1396,7 @@ var app = new Vue({
             displaySettingSnackbar.style.marginTop = String(header_end + 12) + "px";
             displaySettingSnackbar.style.marginRight = "20px"
         },
-        changeAccordionDisplayState() {
+        changeAccordionDisplayState() { // 設定アコーディオンの表示状態を変更する
             const vm = this;
             const accordions = document.querySelectorAll(".accordionParent");
             accordions.forEach(function (accordion, index, array) {
@@ -1188,6 +1406,294 @@ var app = new Vue({
                 this.setTableHeight();
             });
         },
+        //
+        //########################
+        // Character Data Base
+        //########################
+        //
+        // init
+        setCharacterDatabaseWidth() { // キャラクターデータベースの幅を設定する
+            this.characterDatabase.width = window.innerWidth*0.75;
+        },
+        setCharacterDatabaseChartWH() { // レーダーチャートの縦幅を設定する
+            let cdbParent = document.querySelector("#cdbChartParent");
+            let cdbCompareParent = document.querySelector("#cdbCompareChartParent");
+            let parentElement = (cdbParent !== null) ? cdbParent : cdbCompareParent;
+            if (parentElement === null) return;
+
+            const width = parentElement.parentElement.clientWidth;
+            if (width != 0) { this.characterDatabase.chartWidth = width };
+            if (cdbParent !== null) cdbParent.style.height = `${this.characterDatabase.chartWidth}px`;
+            if (cdbCompareParent !== null) cdbCompareParent.style.height = `${this.characterDatabase.chartWidth * 1.2}px`;
+        },
+        readCharacterDatabaseFile: function (file) { // xlsx読み込み
+            const vm = this;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                let data = e.target.result;
+                vm.characterDatabaseWorkbook = XLSX.read(data, { 'type': 'binary' })
+            };
+            reader.readAsBinaryString(file);
+        },
+        // Data Create
+        validCdbData() { // キャラクターデータが存在するか確認する
+            const sheetNames = this.characterDatabaseWorkbook.SheetNames;
+            let valid = true;
+            if (sheetNames.length == 1 && sheetNames[0] == "TEMPLATE") {
+                this.state.message.push("エクセルファイルにキャラクターが登録されていません");
+                valid = false;
+            }
+            console.log(sheetNames)
+            for (let sheetName of sheetNames) {
+                const data = XLSX.utils.sheet_to_json(this.characterDatabaseWorkbook.Sheets[sheetName], { header: 1 });
+                const colNames = Object.values(this.defaults.characterDatabase);
+                for (let colName of colNames) {
+                    if (data[0].indexOf(colName) == -1) {
+                        this.state.message.push(`${sheetName}シートに以下の列が存在しません: ${colName}`);
+                            valid = false;
+                    }
+                }
+            }
+            this.characterDatabase.state.fileError = !valid;
+            return valid;
+        },
+        createCharacterPage(characterName) { // キャラクタデータを作成して登録する
+            // init
+            const rawData = XLSX.utils.sheet_to_json(this.characterDatabaseWorkbook.Sheets[characterName], { header: 0 });
+            let data = _.cloneDeep(this.characterDatabase.template);
+            const dtypes = Object.keys(data);
+            const colNames = this.defaults.characterDatabase;
+
+            // 各行を処理
+            for (let row of rawData) {
+                const dtype = row[colNames.dtype];
+                if (dtypes.indexOf(dtype) == -1) {
+                    this.state.message.push(`キャラクター「${characterName}」に使用できないデータ型が設定されています`)
+                    continue;
+                }
+                data.name = characterName;
+                let value = row[colNames.value];
+                if (dtype == "group" || dtype == "caption") {
+                    data[dtype] = value;
+                    continue;
+                }  else if (dtype == "img") {
+                    data.img.push({ src: value });
+                    continue;
+                }
+                const index = row[colNames.index];
+                if (dtype == "date") {
+                    value = this.formatDate(value);
+                }
+                data[dtype][index] = value;
+                if (this.characterDatabase.columns[dtype].indexOf(index) == -1) {
+                    this.characterDatabase.columns[dtype].push(index);
+                }
+            }
+
+            // キャラクタ一覧にキャラクタを登録
+            if (Object.keys(this.characterDatabase.characters).indexOf(data.group) == -1) {
+                this.characterDatabase.characters[data.group] = [];
+            }
+            this.characterDatabase.characters[data.group].push(characterName);
+
+            // キャラクタデータを登録
+            this.characterDatabase.data[characterName] = data;
+        },
+        createCharacterChartData(characterName) { // chart用データを作成
+            const data = this.characterDatabase.data[characterName].chart;
+            if (data.length == 0) return;
+
+            let labels = [];
+            let dataset = {
+                label: characterName,
+                data: [],
+                backgroundColor: this.primaryColorAlpha,
+                borderColor: this.primaryColor,
+                pointBackgroundColor: this.primaryColor,
+                pointBorderColor: this.primaryColor,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: this.primaryColor,
+            };
+            for (let [k, v] of Object.entries(data)) {
+                labels.push(k);
+                dataset.data.push(v);
+            }
+            this.characterDatabase.chartData[characterName] = {
+                labels: labels,
+                datasets: [dataset],
+            }
+        },
+        createCompareChartData() {
+            const colNames = this.characterDatabase.columns.chart;
+            let datasets = [];
+            for (const character of this.characterDatabase.characterList) {
+                if (character.disabled) continue;
+                const characterName = character.name;
+                let data = [];
+                const df = this.characterDatabase.data[characterName].chart;
+                for (const colName of colNames) {
+                    data.push((Object.keys(df).indexOf(colName) == -1) ? null : df[colName]);
+                }
+                const colorIndex = datasets.length % this.defaults.color.length;
+                const color = this.defaults.color[colorIndex];
+                let dataset = {
+                    label: characterName,
+                    data: data,
+                    fill: false,
+                    backgroundColor: color,
+                    borderColor: color,
+                    pointBackgroundColor: color,
+                    pointBorderColor: color,
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: color,
+                }
+                datasets.push(dataset);
+            }
+            this.characterDatabase.compareChartData = {
+                labels: colNames,
+                datasets: datasets,
+            }
+        },
+        createCharacterList() { // キャラクタタブ用のリストを作成する
+            let res = [];
+            for (const groupName in this.characterDatabase.characters) {
+                const characters = this.characterDatabase.characters[groupName];
+                res.push({ name: groupName, disabled: true });
+                for (const character of characters) {
+                    res.push({ name: character, disabled: false });
+                }
+            }
+            this.characterDatabase.characterList = res;
+        },
+        createColumnList() { // compareタブ用のリストを作成する
+            let res = [];
+            for (const dtype in this.characterDatabase.columns) {
+                const columns = this.characterDatabase.columns[dtype];
+                res.push({ colName: dtype, disabled: true });
+                for (const colName of columns) {
+                    res.push({ colName: colName, disabled: false, dtype: dtype });
+                }
+            }
+            this.characterDatabase.columnList = res;
+        },
+        initCharacterDatabaseChart() { // タブ選択/ファイル読み込み時にグラフの初期化を行う
+            const selectedRow = this.characterDatabase.characterList[this.characterDatabase.characterListSelected];
+            if (selectedRow === undefined) return;
+
+            const characterName = selectedRow.name;
+            if (Object.keys(this.characterDatabase.chartData).indexOf(characterName) == -1) return;
+
+            let cnv = document.querySelector("#cdbChart");
+            if (cnv === null) return;
+
+            this.setCharacterDatabaseChartWH();
+
+            const data = this.characterDatabase.chartData[characterName];
+            if (this.characterDatabase.chart === null) {
+                let ctx = cnv.getContext("2d");
+                this.characterDatabase.chart = new Chart(ctx, {
+                    type: "radar",
+                    data: data,
+                    options: this.characterDatabase.chartOptions
+                });
+            } else {
+                this.characterDatabase.chart.data = data;
+                this.characterDatabase.chart.update();
+            }
+        },
+        initCharacterDatabaseCompareChart() { // 比較レーダーチャートを初期化する
+            let cnv = document.querySelector("#cdbCompareChart");
+            if (cnv == null) return;
+
+            this.setCharacterDatabaseChartWH();
+
+            if (this.characterDatabase.compareChart === null) {
+                let options = _.cloneDeep(this.characterDatabase.chartOptions);
+                options.plugins.legend.display = true;
+                options.plugins.colorschemas = {};
+                options.plugins.colorschemas.scheme = "tableau.HueCircle19";
+                let ctx = cnv.getContext("2d");
+                this.characterDatabase.compareChart = new Chart(ctx, {
+                    type: "radar",
+                    data: this.characterDatabase.compareChartData,
+                    options: options
+                });
+            } else {
+                this.characterDatabase.compareChart.data = this.characterDatabase.compareChartData;
+                this.characterDatabase.compareChart.update();
+            }
+        },
+        clearCharacterDatabase() { // キャラクタDBのデータクリア
+            this.characterDatabase.characters = {};
+            this.characterDatabase.characterList = [];
+            this.characterDatabase.data = {};
+            this.characterDatabase.columnList = [];
+        },
+        async initCharacterDatabase() { // キャラクターDBの初期化
+            if (this.validCdbData()) {
+                this.state.message = [];
+                this.clearCharacterDatabase();
+                for (let sheetName of this.characterDatabaseWorkbook.SheetNames) {
+                    if (sheetName != "TEMPLATE") {
+                        await this.createCharacterPage(sheetName);
+                        await this.createCharacterChartData(sheetName);
+                    }
+                }
+                await this.createCharacterList();
+                await this.createColumnList();
+                await this.initCharacterDatabaseChart();
+                await this.createCompareChartData();
+                await this.initCharacterDatabaseCompareChart();
+                this.characterDatabase.state.ready = true;
+                this.characterDatabase.mainTab = 1;
+                this.characterDatabase.dataTab = 0;
+            }
+            if (this.state.message.length > 0) {
+                this.state.message = Array.from(new Set(this.state.message));
+                this.state.errorSnack = true;
+            }
+        },
+        // Display (User Triggered)
+        changeCompareTabValue() { // 比較ページの表示切り替えボタン押下時、表示を変更&初期化
+            this.setCharacterDatabaseChartWH();
+            this.initCharacterDatabaseCompareChart();
+            if (this.characterDatabase.compareTab == 1) {
+                this.characterDatabase.compareTab = 0;
+            } else {
+                this.characterDatabase.compareTab = 1;
+            };
+        },
+        resetCrosstabDuplicatedValue(idx) { // 選択フォームで同値選択が行われた際、下位のフォームの値をリセットする
+            let crossTabValue = this.characterDatabase.crossTabValue;
+            if (idx == 2) return;
+            if (
+                (crossTabValue[2] == crossTabValue[1]) ||
+                (crossTabValue[2] == crossTabValue[0])
+            ) crossTabValue[2] = null;
+            if (idx == 1) return;
+            if (crossTabValue[1] == crossTabValue[0]) crossTabValue[1] = null;
+        },
+        characterClicked(characterName) { // キャラクタページに遷移する
+            const characters = this.characterDatabase.characterList.filter((character) => character.name == characterName && !character.disabled);
+            if (characters.length == 0 || this.characterDatabaseWorkbook === null) return;
+            if (!this.state.showCharacterDB) this.state.showCharacterDB = true;
+            const character = characters[0];
+            const characterIndex = this.characterDatabase.characterList.indexOf(character);
+            this.characterDatabase.mainTab = 1;
+            this.characterDatabase.characterListSelected = characterIndex;
+        },
+        columnClicked(colName) { // 項目比較ページに遷移する
+            const column = this.characterDatabase.columnList.filter((column) => column.colName == colName && !column.disabled)[0];
+            const colIndex = this.characterDatabase.columnList.indexOf(column);
+            this.characterDatabase.mainTab = 2;
+            this.characterDatabase.columnListSelected = colIndex;
+        },
+        undisplayDisplaySetting() { // display settingを非表示にする
+            this.state.showDisplaySetting = false;
+        },
+        setCharacterDatabaseCurrentColor(color) { // カラーピッカーの色を設定する
+            this.characterDatabase.currentColor = color;
+        }
     },
 });
 

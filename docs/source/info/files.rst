@@ -16,8 +16,15 @@ Chroniclinerには以下のファイル及びフォルダが含まれます
   + ``./temp/`` - テンプレート用フォルダ
 
     + ``temp.xlsx`` - テンプレート
+    + ``cdbTemp.xlsx`` - キャラクタデータベースのテンプレート
+
+  + ``./img/`` - 画像フォルダ
+
+    + ``sample1.png`` - サンプル画像1
+    + ``sample2.png`` - サンプル画像2
 
   + ``sample.xlsx`` - 年表データのサンプル
+  + ``cdbSample.xlsx`` - キャラクターデータベースのサンプル
 
 + ``./app.html`` - 本体
 + ``./readme.md`` - Readme（ドキュメント誘導用）

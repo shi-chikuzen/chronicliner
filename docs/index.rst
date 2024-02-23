@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ========================================
-Chronicliner v2.2.0
+Chronicliner v3.0.0
 ========================================
 
 .. image:: ./img/usage_timeline.png
@@ -22,7 +22,7 @@ MITライセンスです。
 + 同人・商用等での利用及び改変、改変物の配布が可能です
 + 但し、このリソースを使用したことによる責任の一切を負いかねます
 
-Copyright (c) 2022-2023 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
+Copyright (c) 2022-2024 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
 
 .. _contact:
 
@@ -58,6 +58,15 @@ Contact
    ./source/data/event
    ./source/data/periodEvent
    ./source/info/aboutErrors
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Character Database:
+
+   ./source/characterDatabase/quickstart
+   ./source/characterDatabase/ui
+   ./source/characterDatabase/data
 
 .. toctree::
    :maxdepth: 2

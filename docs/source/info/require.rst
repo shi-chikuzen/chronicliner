@@ -18,6 +18,7 @@
   + `SheetJS <https://sheetjs.com/>`_
   + `Moment.js <https://momentjs.com/>`_
   + `Lodash <https://lodash.com/>`_
+  + `Chart.js <https://www.chartjs.org/>`_
 
 また、データ編集のために **Excel** が必要です。
 

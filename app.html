@@ -61,6 +61,11 @@
                         <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
                         <v-icon v-else>mdi-star-outline</v-icon>
                     </v-btn>
+                    <!-- キャラクターデータベース -->
+                    <v-btn icon @click="state.showCharacterDB = true">
+                        <v-icon v-if="state.showCharacterDB">mdi-database</v-icon>
+                        <v-icon v-else>mdi-database-outline</v-icon>
+                    </v-btn>
                     <!-- 設定ボタン -->
                     <v-btn icon @click="changeShowDisplaySettingState()">
                         <v-icon v-if="this.state.showDisplaySetting">mdi-cog</v-icon>
@@ -261,7 +266,8 @@
                                                                 v-show="intersection(category.characters, characterSelected).length > 0"
                                                                 :colspan="intersection(category.characters, characterSelected).length * 2"
                                                                 :style="'background-color: ' + category.color + '; border: thin solid white;'"
-                                                                class="white--text">
+                                                                class="white--text"
+                                                                >
                                                                     {{ name }}
                                                                 </th>
                                                             </template>
@@ -270,7 +276,8 @@
                                                             <template v-for="th in timelineHeaders">
                                                                 <th
                                                                 :style="'width: ' + th.width + ';'"
-                                                                :class="th.class.join(' ')">
+                                                                :class="th.class.join(' ')"
+                                                                @click="characterClicked(th.text)">
                                                                     <span v-if="th.text == ''"></span>
                                                                     <span v-else>
                                                                         {{th.text}}<br>
@@ -459,10 +466,295 @@
                         </v-btn>
                     </template>
                 </v-snackbar>
+                <v-dialog
+                v-model="state.showCharacterDB"
+                :width="characterDatabase.width"
+                scrollable>
+                    <v-card>
+                        <v-toolbar
+                        density="compact"
+                        flat>
+                            <v-toolbar-title class="text-caption text-grey">
+                                Character Database
+                            </v-toolbar-title>
+                            <v-spacer></v-spacer>
+                            <v-btn
+                            icon
+                            @click="state.showCharacterDB = false">
+                                <v-icon>mdi-window-close</v-icon>
+                            </v-btn>
+                        </v-toolbar>
+                        <v-tabs
+                        v-model="characterDatabase.mainTab"
+                        align-tabs="end"
+                        class="d-flex justify-end">
+                            <v-tab>FILE</v-tab>
+                            <v-tab :disabled="!characterDatabase.state.ready">CHARACTER</v-tab>
+                            <v-tab :disabled="!this.characterDatabase.state.ready" @click.native="initCharacterDatabaseChart">COMPARE</v-tab>
+                        </v-tabs>
+                        <v-card-text>
+                            <v-window v-model="characterDatabase.mainTab" @change="setCharacterDatabaseChartWH">
+                                <!-- file -->
+                                <v-window-item class="pt-5">
+                                    <v-row class="d-flex justify-center">
+                                        <v-col cols="5" class="d-flex align-center justify-center">
+                                            <v-form>
+                                                <v-file-input
+                                                v-model="characterDatabase.fileSelected"
+                                                @change="readCharacterDatabaseFile"
+                                                accept=".xlsx"
+                                                label="Select File..."
+                                                hide-input
+                                                prepend-icon="mdi-folder-table-outline"
+                                                class="pt-0 mt-0"
+                                                ></v-file-input>
+                                            </v-form>
+                                            <v-expand-x-transition>
+                                                <v-chip
+                                                v-show="this.characterDatabase.state.ready"
+                                                v-if="this.characterDatabase.fileSelected != null"
+                                                :color="this.characterDatabase.state.fileError? 'error' : 'success'"
+                                                class="mr-1"
+                                                outlined>
+                                                    {{this.characterDatabase.fileSelected.name}}
+                                                </v-chip>
+                                            </v-expand-x-transition>
+                                        </v-col>
+                                    </v-row>
+                                </v-window-item>
+                                <!-- character -->
+                                <v-window-item disabled="!characterDatabase.state.ready">
+                                    <v-row>
+                                        <v-col cols="2" class="d-flex flex-column">
+                                            <v-tabs
+                                            vertical
+                                            v-model="characterDatabase.characterListSelected"
+                                            color="primary"
+                                            @change="initCharacterDatabaseChart"
+                                            >
+                                                <v-tab
+                                                v-for="(row, index) in characterDatabase.characterList"
+                                                :disabled="row.disabled"
+                                                >{{row.name}}</v-tab>
+                                            </v-tabs>
+                                        </v-col>
+                                        <v-col cols="10">
+                                            <v-row>
+                                                <v-col cols="6">
+                                                    <v-card-title>
+                                                        {{currentCharacter.name}}
+                                                    </v-card-title>
+                                                    <v-card-text class="text-caption" v-text="currentCharacter.caption" style="white-space: pre-line;"></v-card-text>
+                                                    <v-tabs
+                                                    v-model="characterDatabase.dataTab"
+                                                    >
+                                                        <v-tab>TABLE</v-tab>
+                                                        <v-tab>TIMELINE</v-tab>
+                                                        <v-tab @change="initCharacterDatabaseChart">CHART</v-tab>
+                                                    </v-tabs>
+                                                    <v-window v-model="characterDatabase.dataTab">
+                                                        <v-window-item>
+                                                            <v-data-table
+                                                            :headers="characterDatabase.characterHeader"
+                                                            :items="characterDatabaseItems"
+                                                            group-by="dtype"
+                                                            show-group-by>
+                                                                <template v-slot:item.index="{item}">
+                                                                    <span @click="columnClicked(item.index)">{{item.index}}</span>
+                                                                </template>
+                                                                <template
+                                                                v-slot:item.value="{item}">
+                                                                    <span v-if="item.dtype == 'date'">
+                                                                        {{strftime(item.value, item.displayLimit)}}
+                                                                    </span>
+                                                                    <span v-else-if="item.dtype == 'color'">
+                                                                        <v-tooltip right class="pa-0">
+                                                                            <template v-slot:activator="{ on, attrs }">
+                                                                                <v-chip
+                                                                                :color="item.value"
+                                                                                v-on="on"
+                                                                                @mouseover="setCharacterDatabaseCurrentColor(item.value)">
+                                                                                {{item.value}}
+                                                                                </v-chip>
+                                                                            </template>
+                                                                            <span>
+                                                                                <v-color-picker v-model="characterDatabase.currentColor"
+                                                                                dark></v-color-picker>
+                                                                            </span>
+                                                                        </v-tooltip>
+                                                                    </span>
+                                                                    <span v-else>
+                                                                        {{item.value}}
+                                                                    </span>
+                                                                </template>
+                                                            </v-data-table>
+                                                        </v-window-item>
+                                                        <v-window-item>
+                                                            <v-data-table
+                                                            :headers="characterDatabase.timelineHeader"
+                                                            :items="characterDatabaseTimelineItems">
+                                                                <template
+                                                                v-slot:item.date="{item}">
+                                                                    {{strftime(item.date, item.displayLimit)}}
+                                                                </template>
+                                                            </v-data-table>
+                                                        </v-window-item>
+                                                        <v-window-item
+                                                        class="mt-5"
+                                                        eager="true">
+                                                            <div id="cdbChartParent">
+                                                                <canvas
+                                                                id="cdbChart">
+                                                                </canvas>
+                                                            </div>
+                                                        </v-window-item>
+                                                    </v-window>
+                                                </v-col>
+                                                <v-col cols="6">
+                                                    <v-carousel
+                                                    hide-delimiter-background="true"
+                                                    height="auto"
+                                                    v-model="characterDatabase.imgSelected"
+                                                    class="mt-5 mb-2">
+                                                        <v-carousel-item
+                                                        v-for="(item, index) in characterDatabaseImages"
+                                                        :key="`cdbImages_${index}`"
+                                                        :src="item.src">
+                                                        </v-carousel-item>
+                                                    </v-carousel>
+                                                    <v-row dense="true">
+                                                        <v-col
+                                                        v-for="(item, index) of  characterDatabaseImages"
+                                                        :key="`cdbImagesIcon_${index}`"
+                                                        class="d-flex child-flex"
+                                                        cols="2">
+                                                            <v-img
+                                                            :src="item.src"
+                                                            aspect-ratio="1"
+                                                            class="grey lighten-2"
+                                                            @click.native="characterDatabase.imgSelected = index;"></v-img>
+                                                        </v-col>
+                                                    </v-row>
+                                                </v-col>
+                                            </v-row>
+                                        </v-col>
+                                    </v-row>
+                                </v-window-item>
+                                <!-- compare -->
+                                <v-window-item disabled="!characterDatabase.state.ready">
+                                    <v-row>
+                                        <v-col cols="2" class="d-flex flex-column">
+                                            <v-tabs
+                                            vertical
+                                            v-model="characterDatabase.columnListSelected"
+                                            color="primary"
+                                            >
+                                                <v-tab
+                                                v-for="(row, index) in characterDatabase.columnList"
+                                                :disabled="row.disabled"
+                                                >{{row.colName}}</v-tab>
+                                            </v-tabs>
+                                        </v-col>
+                                        <v-col cols="10">
+                                            <v-row>
+                                                <v-col cols="6">
+                                                    <div class="d-flex justify-space-between align-center">
+                                                        <v-card-title>
+                                                            {{currentColumnName}}
+                                                        </v-card-title>
+                                                        <v-btn
+                                                        @click="changeCompareTabValue"
+                                                        class="ma-2"
+                                                        outlined
+                                                        rounded>
+                                                            {{compareTabBtnMsg}}
+                                                            <v-icon right>
+                                                                mdi-chevron-right
+                                                            </v-icon>
+                                                        </v-btn>
+                                                    </div>
+                                                    <v-card-text class="text-caption">データ型: {{currentColumnDtype}}</v-card-text>
+                                                    <v-data-table
+                                                    :headers="characterDatabase.compareHeader"
+                                                    :items="characterDatabaseCompareItems">
+                                                        <template v-slot:item.character="{item}">
+                                                            <span @click="characterClicked(item.character)">{{item.character}}</span>
+                                                        </template>
+                                                        <template
+                                                        v-slot:item.value="{item}">
+                                                            <span v-if="item.dtype == 'date'">
+                                                                {{strftime(item.value, item.displayLimit)}}
+                                                            </span>
+                                                            <span v-else-if="item.dtype == 'color'">
+                                                                <v-tooltip right class="pa-0">
+                                                                    <template v-slot:activator="{ on, attrs }">
+                                                                        <v-chip
+                                                                        :color="item.value"
+                                                                        v-on="on"
+                                                                        @mouseover="setCharacterDatabaseCurrentColor(item.value)">
+                                                                        {{item.value}}
+                                                                        </v-chip>
+                                                                    </template>
+                                                                    <span>
+                                                                        <v-color-picker v-model="characterDatabase.currentColor"
+                                                                        dark></v-color-picker>
+                                                                    </span>
+                                                                </v-tooltip>
+                                                            </span>
+                                                            <span v-else>
+                                                                {{item.value}}
+                                                            </span>
+                                                        </template>
+                                                    </v-data-table>
+                                                </v-col>
+                                                <v-col cols="6" eager="true">
+                                                    <v-window v-model="characterDatabase.compareTab">
+                                                        <v-window-item>
+                                                            <v-row class="mt-5">
+                                                                <v-col cols="4" v-for="cTabIdx in 3">
+                                                                    <v-select
+                                                                    v-model="characterDatabase.crossTabValue[cTabIdx - 1]"
+                                                                    :items="crossTabItems[cTabIdx - 1]"
+                                                                    :label="`項目${cTabIdx}`"
+                                                                    @change="resetCrosstabDuplicatedValue(cTabIdx - 1)"
+                                                                    dense="true"></v-select>
+                                                                </v-col>
+                                                            </v-row>
+                                                            <v-row>
+                                                                <v-col cols="12">
+                                                                    <v-data-table
+                                                                    :headers="crossTabHeader"
+                                                                    :items="crossTabTableItem"
+                                                                    :group-by="characterDatabase.crossTabValue[0]"
+                                                                    :sort-by="characterDatabase.crossTabValue.slice(-2)"
+                                                                    multi-sort
+                                                                    show-group-by>
+                                                                    </v-data-table>
+                                                                </v-col>
+                                                            </v-row>
+                                                        </v-window-item>
+                                                        <v-window-item eager="true">
+                                                            <div
+                                                            class="mt-5"
+                                                            id="cdbCompareChartParent">
+                                                                <canvas id="cdbCompareChart"></canvas>
+                                                            </div>
+                                                        </v-window-item>
+                                                    </v-window>
+                                                </v-col>
+                                            </v-row>
+                                        </v-col>
+                                    </v-row>
+                                </v-window-item>
+                            </v-window>
+                        </v-card-text>
+                    </v-card>
+                </v-dialog>
             </v-app>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
         <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
         <script type="text/javascript" src="./js/app.js"></script>
     </body>
 </html>
