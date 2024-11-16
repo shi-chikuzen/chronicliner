@@ -341,6 +341,7 @@ var app = new Vue({
             return result;
         },
         fillTimeByZero(val) { // 時刻をゼロ埋めする
+            console.info(val)
             return ("0" + String(val)).slice(-2);
         },
         isBetween(target, start, end) { // targetがstart以上end未満かを返す
@@ -470,7 +471,8 @@ var app = new Vue({
         getAgeSerial(name, date) { // 該当dateでの年齢をシリアル値で返す
             if (date === undefined) return -1;
             const character = this.data.settings.character[name];
-            const passed = this.resetDateFromLimit(date, "hour").getTime() - this.resetDateFromLimit(character.birthday, "hour").getTime();
+            const tmpDate = _.cloneDeep(date);
+            const passed = this.resetDateFromLimit(tmpDate, "hour").getTime() - this.resetDateFromLimit(character.birthday, "hour").getTime();
             return passed;
         },
         getCharacterPeriodEvents(name, date) { // 指定キャラクターの該当DateのperiodEventを返す
