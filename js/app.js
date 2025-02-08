@@ -45,7 +45,8 @@ var app = new Vue({
             "summaryBackgroundColor": "#DADADA",
             "characterDatabase": {"dtype": "データ型", "index": "項目名", "value": "値"},
         },
-        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": {"events": {}, "markers": []}, "characters": [], "tags": {"character": [], "event": [], "master": []} },
+        data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": { "events": {}, "markers": [] }, "characters": [], "tags": { "character": [], "event": [], "master": [] } },
+        tag2CharacterDict: {},
         characterSelected: [],
         tagBulkMode: false,
         tagSelected: {"character": [], "event": [], "master": []},
@@ -601,6 +602,7 @@ var app = new Vue({
         createCharacter() { // キャラクタ設定を読み込んでフォーマット
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["character"]], { header: 0 });
             const colNames = this.defaults.colNames["character"];
+            let vm = this;
             for (let i = 0; i < data.length; i++) { // 各データを処理
                 const row = data[i];
                 if (!(row[colNames["category"]] in this.data.settings.category)) { // 指定カテゴリが存在しない
@@ -629,6 +631,13 @@ var app = new Vue({
                 this.data.periodEvent.events[characterName] = [];
                 this.data.settings.category[result.category].characters.push(characterName);
                 this.data.tags.character = this.data.tags.character.concat(tags);
+                tags.forEach(tag => {
+                    if (!(tag in vm.tag2CharacterDict)) {
+                        vm.tag2CharacterDict[tag] = [characterName];
+                    } else {
+                        vm.tag2CharacterDict[tag].push(characterName);
+                    }
+                });
             };
         },
         createCharacterSchoolInfo() { // 教育課程設定を作成
@@ -769,13 +778,18 @@ var app = new Vue({
             const eventColNames = this.defaults.colNames["event"];
             for (const row of data) {
                 let res = {};
+                let isTagEvent = false;
                 const category = String(row[colNames["category"]]);
+                const formattedCategoryAsTag = category.replace("#", "");
                 if (category == "all") {
                     res.characters = this.data.characters;
                 } else if (category in this.data.settings.category) {
                     res.characters = this.data.settings.category[row[colNames["category"]]].characters;
                 } else if (this.data.characters.indexOf(category) != -1) {
                     res.characters = [row[colNames["category"]]];
+                } else if (formattedCategoryAsTag in this.tag2CharacterDict) {
+                    isTagEvent = true;
+                    res.characters = this.tag2CharacterDict[formattedCategoryAsTag];
                 } else {
                     this.state.message.push(`存在しないカテゴリないしキャラクター「${row[colNames["category"]]}」が期間イベントに指定されています`);
                     continue;
@@ -791,6 +805,7 @@ var app = new Vue({
                 res.startDetail = (colNames["startDetail"] in row) ? String(row[colNames["startDetail"]]) : "";
                 res.endDetail = (colNames["endDetail"] in row) ? String(row[colNames["endDetail"]]) : "";
                 res.tags = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
+                if (isTagEvent && res.tags.indexOf(formattedCategoryAsTag) == -1) res.tags += category;
                 res.important = (colNames["important"] in row) ? row[colNames["important"]] : false;
                 if (this.isInvalidDate(res.startDate) || this.isInvalidDate(res.endDate)) {
                     this.state.message.push(`期間イベント「 ${res.title} 」に設定された期間が不正です`);
@@ -846,12 +861,14 @@ var app = new Vue({
                 const title = String(data[i][colNames["title"]]);
                 const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
                 const tagStr = (colNames["tag"] in data[i]) ? String(data[i][colNames["tag"]]) : "";
-                const tags = this.formatTag(tagStr);
+                let tags = this.formatTag(tagStr);
                 const important = (colNames["important"] in data[i]) ? data[i][colNames["important"]] : false;
                 this.data.tags.event = this.data.tags.event.concat(tags);
                 // 対象キャラクタデータを作成
                 let characters = [];
                 let eventCategory = "";
+                let isTagEvent = false;
+                const formattedCategoryAsTag = category.replace("#", "");
                 if (category == "all") {
                     characters = Object.keys(this.data.settings.character);
                     eventCategory = "all";
@@ -861,10 +878,15 @@ var app = new Vue({
                 } else if (category in this.data.settings.character) {
                     characters = [category];
                     eventCategory = "character";
+                } else if (formattedCategoryAsTag in this.tag2CharacterDict) {
+                    isTagEvent = true;
+                    characters = this.tag2CharacterDict[formattedCategoryAsTag];
+                    eventCategory = "character";
                 } else {
                     this.state.message.push(`イベント「${title}」に指定されたカテゴリないしキャラクター「${category}」が存在しません`);
                     continue;
                 };
+                if (isTagEvent && tags.indexOf(formattedCategoryAsTag) == -1) tags.push(formattedCategoryAsTag);
                 // イベントを設定
                 const key = moment(date).format() + String(settings[limit]) + String(bfKeyDict[beforeAfter]);
                 if (Object.keys(this.data.event).indexOf(key) == -1) {
@@ -980,8 +1002,8 @@ var app = new Vue({
         },
         setTags() { // タグから重複を排除
             this.data.tags.character = Array.from(new Set(this.data.tags.character));
-                this.data.tags.event = Array.from(new Set(this.data.tags.event));
-                this.data.tags.master = Array.from(new Set(this.data.tags.character.concat(this.data.tags.event)));
+            this.data.tags.event = Array.from(new Set(this.data.tags.event));
+            this.data.tags.master = Array.from(new Set(this.data.tags.character.concat(this.data.tags.event)));
         },
         setRangeSliderMinMaxValue() { // 表示年スライダーの最小/最大値を設定
             const years = Object.keys(this.yearSummary).sort();
