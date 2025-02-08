@@ -22,7 +22,7 @@ var app = new Vue({
         primaryColorAlpha: "rgba(0, 174, 185, 0.2)",
         fileSelected: null,
         workbook: null,
-        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false, showCharacterDB: false},
+        state: { "fileError": false, "ready": false, "loading": false, domUpdated: false, "message": [], "errorSnack": false, highlightMode: false, showDisplaySetting: true, showYearRangeSummary: false, showCharacterDB: false, showFlagOverInfo: false},
         displaySetting: {
             showAccordion: true,
             yearRange: {"min": 1900, "max": 2000, "value": [1900, 2000]},
@@ -34,8 +34,8 @@ var app = new Vue({
                 "category": { "name": "カテゴリ名", "color": "カテゴリ色", "bgcolor": "カテゴリ色" },
                 "character": { "name": "キャラクタ名", "category": "カテゴリ", "birthday": "誕生日", "death": "死亡日", "birthdayDetail": "誕生日詳細", "deathdayDetail": "死亡日詳細", "autoBirth": "誕生年自動計算", "tag": "タグ" },
                 "school": { "characterName": "キャラクタ名", "name": "教育課程名", "period": "基準所属年数", "startDate": "起算日", "age": "開始年齢", "enterGrade": "編入学年", "enterDate": "編入日", "autoBirth": "誕生年自動計算に使用", "autoYear": "誕生年起算年", "autoGrade": "誕生年起算学年" },
-                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細", "tag": "タグ", "important": "重要イベント" },
-                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細", "tag": "タグ", "important": "重要イベント" },
+                "event": { "category": "カテゴリ", "title": "タイトル", "date": "日時", "limit": "以下を無視", "beforeAfter": "以前 / 以降", "detail": "詳細", "tag": "タグ", "important": "重要イベント", "flagId": "フラグID" },
+                "periodEvent": { "category": "カテゴリ", "title": "タイトル", "startDate": "開始日時", "endDate": "終了日時", "limit": "以下を無視", "display": "経過時間粒度", "startDetail": "開始時詳細", "endDetail": "終了時詳細", "tag": "タグ", "important": "重要イベント", "flagId": "フラグID" },
             },
             "displayLimit": { "month": 0, "day": 1, "hour": 2, "minute": 3, "second": 4 },
             "displayTime": { "year": "年", "month": "ヶ月", "day": "日", "hour": "時間", "minute": "分", "second": "秒" },
@@ -47,6 +47,8 @@ var app = new Vue({
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": { "events": {}, "markers": [] }, "characters": [], "tags": { "character": [], "event": [], "master": [] } },
         tag2CharacterDict: {},
+        flagPayOffed: {},
+        flagPeriod: {},
         characterSelected: [],
         tagBulkMode: false,
         tagSelected: {"character": [], "event": [], "master": []},
@@ -603,8 +605,7 @@ var app = new Vue({
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["character"]], { header: 0 });
             const colNames = this.defaults.colNames["character"];
             let vm = this;
-            for (let i = 0; i < data.length; i++) { // 各データを処理
-                const row = data[i];
+            for (const row of data) { // 各データを処理
                 if (!(row[colNames["category"]] in this.data.settings.category)) { // 指定カテゴリが存在しない
                     this.state.message.push(`キャラクター「${row[colNames["name"]]}」に指定されたカテゴリ「${row[colNames["category"]]}」の設定が存在しません`);
                     continue;
@@ -772,28 +773,92 @@ var app = new Vue({
             };
             return rows;
         },
+        getCharcterListOfEvent(row) {
+            const colNames = this.defaults.colNames["event"];
+            const title = String(row[colNames["title"]]);
+            const category = String(row[colNames["category"]]);
+            let characters = [];
+            let eventCategory = "";
+            let isTagEvent = false;
+            const formattedCategoryAsTag = category.replace("#", "");
+            if (category == "all") {
+                characters = Object.keys(this.data.settings.character);
+                eventCategory = "all";
+            } else if (category in this.data.settings.category) {
+                characters = this.data.settings.category[category].characters;
+                eventCategory = "category";
+            } else if (category in this.data.settings.character) {
+                characters = [category];
+                eventCategory = "character";
+            } else if (formattedCategoryAsTag in this.tag2CharacterDict) {
+                isTagEvent = true;
+                characters = this.tag2CharacterDict[formattedCategoryAsTag];
+                eventCategory = "character";
+            } else {
+                this.state.message.push(`イベント「${title}」に指定されたカテゴリないしキャラクター「${category}」が存在しません`);
+            };
+            return [eventCategory, characters, isTagEvent];
+        },
+        createFlagPayOffedDict() { // 期間イベントシートに記載されたフラグが回収されたか確認
+            const flagData = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["periodEvent"]], { header: 0 });
+            const payOffData = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["event"]], { header: 0 });
+            const colNames = this.defaults.colNames["periodEvent"];
+            const evColNames = this.defaults.colNames["event"];
+            const flagColName = colNames["flagId"];
+
+            // フラグ登録
+            for (const row of flagData) {
+                // フラグ型イベントでない場合スキップ
+                if (row[flagColName] == "" || row[flagColName] === undefined) continue;
+                const flagId = row[flagColName];
+                const limit = (colNames["limit"] in row) ? String(row[colNames["limit"]]) : "hour";
+                let startDate = this.formatDate(row[colNames["startDate"]]);
+                startDate = this.resetDateFromLimit(startDate, limit);
+                let endDate = this.formatDate(row[colNames["endDate"]]);
+                endDate = this.resetDateFromLimit(endDate, limit);
+                // 対象キャラクタを取得
+                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                // フラグID:{キャラクタ名: bool}の辞書を作成
+                this.flagPayOffed[flagId] = {};
+                this.flagPeriod[flagId] = {"startDate": startDate, "endDate": endDate};
+                for (character of characters) this.flagPayOffed[flagId][character] = false;
+            }
+            // フラグ解消の登録
+            for (const row of payOffData) {
+                // フラグ型イベントでない場合スキップ
+                if (row[flagColName] == "" || row[flagColName] === undefined) continue;
+                // 不正日付の場合スキップ
+                let date = this.formatDate(row[evColNames["date"]]);
+                if (this.isInvalidDate(date)) continue;
+                // 日付及びIDを取得
+                const limit = (evColNames["limit"] in row) ? String(row[evColNames["limit"]]) : "hour";
+                date = this.resetDateFromLimit(date, limit);
+                const flagId = row[flagColName];
+                // 対象キャラクタを取得
+                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                const startDate = this.flagPeriod[flagId].startDate;
+                const endDate = this.flagPeriod[flagId].endDate;
+                // 期限内の場合フラグ解消を登録
+                if (startDate <= date && date <= endDate) {
+                    for (character of characters) {
+                        this.flagPayOffed[flagId][character] = true;
+                    }
+                }
+            }
+        },
         createPeriodEvent() { // 期間イベントを作成
             const data = XLSX.utils.sheet_to_json(this.workbook.Sheets[this.defaults.sheetNames["periodEvent"]], { header: 0 });
             const colNames = this.defaults.colNames["periodEvent"];
             const eventColNames = this.defaults.colNames["event"];
             for (const row of data) {
                 let res = {};
-                let isTagEvent = false;
+                const isFlagEvent = !(row[colNames["flagId"]] == "" || row[colNames["flagId"]] === undefined);
+                const flagId = (isFlagEvent) ? row[colNames["flagId"]] : "";
                 const category = String(row[colNames["category"]]);
                 const formattedCategoryAsTag = category.replace("#", "");
-                if (category == "all") {
-                    res.characters = this.data.characters;
-                } else if (category in this.data.settings.category) {
-                    res.characters = this.data.settings.category[row[colNames["category"]]].characters;
-                } else if (this.data.characters.indexOf(category) != -1) {
-                    res.characters = [row[colNames["category"]]];
-                } else if (formattedCategoryAsTag in this.tag2CharacterDict) {
-                    isTagEvent = true;
-                    res.characters = this.tag2CharacterDict[formattedCategoryAsTag];
-                } else {
-                    this.state.message.push(`存在しないカテゴリないしキャラクター「${row[colNames["category"]]}」が期間イベントに指定されています`);
-                    continue;
-                };
+                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                res.isFlagEvent = true;
+                res.characters = characters;
                 res.category = category;
                 res.title = String(row[colNames["title"]]);
                 res.limit = (colNames["limit"] in row) ? String(row[colNames["limit"]]) : "hour";
@@ -813,25 +878,41 @@ var app = new Vue({
                 };
                 // マーカーを作成
                 let startMarker = {};
-                let endMarker = {};
+                startMarker[colNames["flagId"]] = flagId;
                 startMarker[eventColNames["category"]] = category;
-                endMarker[eventColNames["category"]] = category;
-                startMarker[eventColNames["title"]] = res.title + "開始";
-                endMarker[eventColNames["title"]] = res.title + "終了";
+                startMarker[eventColNames["title"]] = `${res.title}${(isFlagEvent)? "フラグ":""}開始`;
                 startMarker[eventColNames["date"]] = res.startDate;
-                endMarker[eventColNames["date"]] = res.endDate;
                 startMarker[eventColNames["limit"]] = res.limit;
-                endMarker[eventColNames["limit"]] = res.limit;
                 startMarker[eventColNames["detail"]] = res.startDetail;
-                endMarker[eventColNames["detail"]] = res.endDetail;
-                startMarker[eventColNames["beforeAfter"]] = "期間";
-                endMarker[eventColNames["beforeAfter"]] = "期間";
+                startMarker[eventColNames["beforeAfter"]] = (isFlagEvent)? "フラグ":"期間";
                 startMarker[eventColNames["tag"]] = res.tags;
-                endMarker[eventColNames["tag"]] = res.tags;
                 startMarker[eventColNames["important"]] = res.important;
-                endMarker[eventColNames["important"]] = res.important;
                 this.data.periodEvent.markers.push(startMarker);
-                this.data.periodEvent.markers.push(endMarker);
+                let endMarker = {};
+                endMarker[colNames["flagId"]] = flagId;
+                endMarker[eventColNames["category"]] = category;
+                endMarker[eventColNames["title"]] = res.title + "終了";
+                endMarker[eventColNames["date"]] = res.endDate;
+                endMarker[eventColNames["limit"]] = res.limit;
+                endMarker[eventColNames["detail"]] = res.endDetail;
+                endMarker[eventColNames["beforeAfter"]] = (isFlagEvent)? "フラグ":"期間";
+                endMarker[eventColNames["tag"]] = res.tags;
+                endMarker[eventColNames["important"]] = res.important;
+                if (!isFlagEvent) {
+                    this.data.periodEvent.markers.push(endMarker);
+                } else {
+                    // フラグ型イベントの場合、解消イベントが登録されていればエンドマーカーを入れない
+                    const flagId = row[colNames["flagId"]].replace("#", "");
+                    for (const characterName of res.characters) {
+                        if (!this.flagPayOffed[flagId][characterName]) {
+                            let characterEndMarker = _.cloneDeep(endMarker);
+                            characterEndMarker[eventColNames["category"]] = characterName;
+                            characterEndMarker[eventColNames["title"]] = res.title + "未回収";
+                            characterEndMarker["isFlagOver"] = true;
+                            this.data.periodEvent.markers.push(characterEndMarker);
+                        }
+                    }
+                }
                 // イベントをキャラクターごとに作成
                 for (const characterName of res.characters) {
                     this.data.periodEvent.events[characterName].push(res);
@@ -847,45 +928,29 @@ var app = new Vue({
             const settings = this.defaults.displayLimit;
             const colNames = this.defaults.colNames["event"];
             const bfKeyDict = this.defaults.beforeAfter;
-            for (let i = 0; i < data.length; i++) { // 各データを処理
-                const category = String(data[i][colNames["category"]]);
-                let date = this.formatDate(data[i][colNames["date"]]);
+            for (const row of data) { // 各データを処理
+                const category = String(row[colNames["category"]]);
+                let date = this.formatDate(row[colNames["date"]]);
                 if (this.isInvalidDate(date)) {
                     this.state.message.push(`イベント「 ${res.title} 」に設定された日時が不正です`);
                     continue;
                 };
-                const limit = (colNames["limit"] in data[i]) ? String(data[i][colNames["limit"]]) : "hour";
+                const limit = (colNames["limit"] in row) ? String(row[colNames["limit"]]) : "hour";
                 date = this.resetDateFromLimit(date, limit);
-                const beforeAfterOriginal = (colNames["beforeAfter"] in data[i]) ? String(data[i][colNames["beforeAfter"]]) : "";
+                const beforeAfterOriginal = (colNames["beforeAfter"] in row) ? String(row[colNames["beforeAfter"]]) : "";
                 const beforeAfter = (beforeAfterOriginal in bfKeyDict) ? beforeAfterOriginal : "";
-                const title = String(data[i][colNames["title"]]);
-                const detail = (colNames["detail"] in data[i]) ? String(data[i][colNames["detail"]]) : "";
-                const tagStr = (colNames["tag"] in data[i]) ? String(data[i][colNames["tag"]]) : "";
+                const title = String(row[colNames["title"]]);
+                const detail = (colNames["detail"] in row) ? String(row[colNames["detail"]]) : "";
+                const tagStr = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
                 let tags = this.formatTag(tagStr);
-                const important = (colNames["important"] in data[i]) ? data[i][colNames["important"]] : false;
+                const important = (colNames["important"] in row) ? row[colNames["important"]] : false;
+                const isFlagEvent = (colNames["flagId"] in row) ? !(row[colNames["flagId"]] == "" || row[colNames["flagId"]] === undefined) : false;
+                const flagId = (isFlagEvent) ? row[colNames["flagId"]] : "";
+                const isFlagOverEvent = ("isFlagOver" in row) ? row["isFlagOver"]  : false;
                 this.data.tags.event = this.data.tags.event.concat(tags);
-                // 対象キャラクタデータを作成
-                let characters = [];
-                let eventCategory = "";
-                let isTagEvent = false;
                 const formattedCategoryAsTag = category.replace("#", "");
-                if (category == "all") {
-                    characters = Object.keys(this.data.settings.character);
-                    eventCategory = "all";
-                } else if (category in this.data.settings.category) {
-                    characters = this.data.settings.category[category].characters;
-                    eventCategory = "category";
-                } else if (category in this.data.settings.character) {
-                    characters = [category];
-                    eventCategory = "character";
-                } else if (formattedCategoryAsTag in this.tag2CharacterDict) {
-                    isTagEvent = true;
-                    characters = this.tag2CharacterDict[formattedCategoryAsTag];
-                    eventCategory = "character";
-                } else {
-                    this.state.message.push(`イベント「${title}」に指定されたカテゴリないしキャラクター「${category}」が存在しません`);
-                    continue;
-                };
+                // 対象キャラクタデータを作成
+                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
                 if (isTagEvent && tags.indexOf(formattedCategoryAsTag) == -1) tags.push(formattedCategoryAsTag);
                 // イベントを設定
                 const key = moment(date).format() + String(settings[limit]) + String(bfKeyDict[beforeAfter]);
@@ -899,15 +964,18 @@ var app = new Vue({
                         "tags": [],
                     };
                 };
-                const row = {
+                const res = {
                     "title": title,
                     "category": category,
                     "characters": characters,
                     "detail": detail,
                     "tags": tags,
                     "important": important,
+                    "isFlagEvent": isFlagEvent,
+                    "flagId": flagId,
+                    "isFlagOverEvent": isFlagOverEvent,
                 };
-                this.data.event[key].events[eventCategory].push(row);
+                this.data.event[key].events[eventCategory].push(res);
                 this.data.event[key].characters = this.union(characters, this.data.event[key].characters);
                 this.data.event[key].tags = this.union(tags, this.data.event[key].tags);
             };
@@ -1016,6 +1084,7 @@ var app = new Vue({
                 await this.createCategory();
                 await this.createCharacter();
                 await this.createCharacterSchoolInfo();
+                await this.createFlagPayOffedDict();
                 await this.createPeriodEvent();
                 await this.createEvent();
                 await this.createYearSummary();
@@ -1387,6 +1456,9 @@ var app = new Vue({
         },
         changeShowDisplaySettingState() { // 表示設定画面の表示非表示をトグルする
             this.state.showDisplaySetting = !this.state.showDisplaySetting;
+        },
+        changeShowFlagOverInfo() { // フラグ期間超過一覧の表示非表示をトグルする
+            this.state.showFlagOverInfo = !this.state.showFlagOverInfo;
         },
         // Styling
         setTableHeight() { // Window Heightに合わせてテーブルのmax-heightを設定する

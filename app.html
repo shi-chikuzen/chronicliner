@@ -1,760 +1,722 @@
 <!DOCTYPE html>
 <!-- Copyright (c) 2022 @shi_chikuzen-->
 <html lang="ja" dir="ltr" id="html">
-    <head>
-        <meta charset="utf-8">
-        <!-- Vuetify CDN Settings -->
-        <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
-        <!-- SheetJS CDN Settings -->
-        <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-        <!-- moment.js -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <!-- lodash -->
-        <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
-        <!-- Font -->
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Unica+One&display=swap" rel="stylesheet">
-        <!-- Sourse -->
-        <link rel="stylesheet" href="./css/app.css">
 
-        <title>Chronicliner</title>
-    </head>
-    <body>
-        <div id="app">
-            <v-app>
-                <!-- Application Bar -->
-                <v-app-bar
-                app
-                absolute
-                class="px-10"
-                style="border-bottom: 1px solid #eaf1f5 !important;"
-                color="white"
+<head>
+    <meta charset="utf-8">
+    <!-- Vuetify CDN Settings -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <!-- SheetJS CDN Settings -->
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <!-- moment.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"
+        integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- lodash -->
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&family=Unica+One&display=swap" rel="stylesheet">
+    <!-- Sourse -->
+    <link rel="stylesheet" href="./css/app.css">
+
+    <title>Chronicliner</title>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <!-- Application Bar -->
+            <v-app-bar app absolute class="px-10" style="border-bottom: 1px solid #eaf1f5 !important;" color="white"
                 elevation="0">
-                    <v-toolbar-title class="font logo pr-5">Chronicliner</v-toolbar-title>
-                    <v-spacer></v-spacer>
-                    <!-- File Form -->
+                <v-toolbar-title class="font logo pr-5">Chronicliner</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <!-- File Form -->
+                <v-form>
+                    <v-file-input v-model="fileSelected" @change="readFile" accept=".xlsx" label="Select File..."
+                        hide-input prepend-icon="mdi-folder-table-outline"></v-file-input>
+                </v-form>
+                <!-- ファイル追加時chipをアニメーションで表示 -->
+                <v-expand-x-transition>
+                    <v-chip v-show="this.state.ready" v-if="this.fileSelected != null"
+                        :color="this.state.fileError? 'error' : 'success'" class="mr-1" outlined>
+                        {{this.fileSelected.name}}
+                    </v-chip>
+                </v-expand-x-transition>
+                <v-btn icon @click="changeShowFlagOverInfo()">
+                    <v-icon v-if="this.state.showFlagOverInfo">mdi-flag-variant-remove</v-icon>
+                    <v-icon v-else>mdi-flag-variant-remove-outline</v-icon>
+                </v-btn>
+                <!-- ハイライトモード -->
+                <v-btn icon @click="changeHighlightState()">
+                    <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
+                    <v-icon v-else>mdi-star-outline</v-icon>
+                </v-btn>
+                <!-- キャラクターデータベース -->
+                <v-btn icon @click="state.showCharacterDB = true">
+                    <v-icon v-if="state.showCharacterDB">mdi-database</v-icon>
+                    <v-icon v-else>mdi-database-outline</v-icon>
+                </v-btn>
+                <!-- 設定ボタン -->
+                <v-btn icon @click="changeShowDisplaySettingState()">
+                    <v-icon v-if="this.state.showDisplaySetting">mdi-cog</v-icon>
+                    <v-icon v-else>mdi-cog-outline</v-icon>
+                </v-btn>
+                <!-- ヘルプ -->
+                <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank"
+                    rel="noopener noreferrer">
+                    <v-btn icon>
+                        <v-icon>
+                            mdi-help-circle-outline
+                        </v-icon>
+                    </v-btn>
+                </a>
+            </v-app-bar>
+            <!-- Contents -->
+            <v-main id="main">
+                <v-snackbar id="displaySettingSnackbarParent" v-model="this.state.showDisplaySetting" timeout="-1">
                     <v-form>
-                        <v-file-input
-                        v-model="fileSelected"
-                        @change="readFile"
-                        accept=".xlsx"
-                        label="Select File..."
-                        hide-input
-                        prepend-icon="mdi-folder-table-outline"
-                        ></v-file-input>
-                    </v-form>
-                    <!-- ファイル追加時chipをアニメーションで表示 -->
-                    <v-expand-x-transition>
-                        <v-chip
-                        v-show="this.state.ready"
-                        v-if="this.fileSelected != null"
-                        :color="this.state.fileError? 'error' : 'success'"
-                        class="mr-1"
-                        outlined>
-                            {{this.fileSelected.name}}
-                        </v-chip>
-                    </v-expand-x-transition>
-                    <!-- ハイライトモード -->
-                    <v-btn icon @click="changeHighlightState()">
-                        <v-icon v-if="this.state.highlightMode">mdi-star</v-icon>
-                        <v-icon v-else>mdi-star-outline</v-icon>
-                    </v-btn>
-                    <!-- キャラクターデータベース -->
-                    <v-btn icon @click="state.showCharacterDB = true">
-                        <v-icon v-if="state.showCharacterDB">mdi-database</v-icon>
-                        <v-icon v-else>mdi-database-outline</v-icon>
-                    </v-btn>
-                    <!-- 設定ボタン -->
-                    <v-btn icon @click="changeShowDisplaySettingState()">
-                        <v-icon v-if="this.state.showDisplaySetting">mdi-cog</v-icon>
-                        <v-icon v-else>mdi-cog-outline</v-icon>
-                    </v-btn>
-                    <!-- ヘルプ -->
-                    <a href="https://shi-chikuzen.github.io/chronicliner_documents/" target="_blank" rel="noopener noreferrer">
-                        <v-btn icon>
-                            <v-icon>
-                                mdi-help-circle-outline
-                            </v-icon>
-                        </v-btn>
-                    </a>
-                </v-app-bar>
-                <!-- Contents -->
-                <v-main id="main">
-                    <v-snackbar
-                    id="displaySettingSnackbarParent"
-                    v-model="this.state.showDisplaySetting"
-                    timeout="-1">
-                        <v-form>
-                            <v-row>
-                                <v-col cols="12">
-                                    <span>表示設定</span>
-                                </v-col>
-                                <v-col cols="12">
-                                    <p class="text-caption">UI表示設定</p>
-                                    <v-switch
-                                    @click="changeAccordionDisplayState();"
-                                    v-model="displaySetting.showAccordion"
-                                    :label="showAccordionSwicherLabel"
-                                    :disabled="!state.ready"
-                                    color="primary"
-                                    hide-details
-                                    inset></v-switch>
-                                </v-col>
-                                <v-col cols="12">
-                                    <p class="text-caption">表示領域設定</p>
-                                    <v-range-slider
-                                    v-model="displaySetting.yearRange.value"
-                                    :min="displaySetting.yearRange.min"
-                                    :max="displaySetting.yearRange.max"
-                                    :disabled="!state.ready"
-                                    step="1"
-                                    color="primary"
-                                    strict
-                                    @end="displayYearRangeChanged">
-                                        <template v-slot:prepend>
-                                            <span class="text-caption">{{displaySetting.yearRange.value[0]}}</span>
-                                        </template>
-                                        <template v-slot:append>
-                                            <span class="text-caption">{{displaySetting.yearRange.value[1]}}</span>
-                                        </template>
-                                    </v-range-slider>
-                                </v-col>
-                            </v-row>
-                        </v-form>
-                    </v-snackbar>
-                    <v-container fluid>
-                        <v-row class="px-3">
-                            <!-- Select Field -->
-                            <v-col cols="12" class="accordionParent">
-                                <v-expansion-panels accordion>
-                                    <v-expansion-panel
-                                    elevation="1">
-                                        <v-expansion-panel-header class="size line-height">
-                                            タグ表示設定
-                                        </v-expansion-panel-header>
-                                        <v-expansion-panel-content>
-                                            <v-tabs
-                                            vertical
-                                            v-show="this.state.ready">
-                                                <v-tab class="justify-start" :disabled="tagBulkMode">
-                                                    キャラクタータグ
-                                                </v-tab>
-                                                <v-tab class="justify-start" :disabled="tagBulkMode">
-                                                    イベントタグ
-                                                </v-tab>
-                                                <v-tab class="justify-start">
-                                                    一括設定
-                                                </v-tab>
-                                                <v-tab-item
-                                                v-for="[key, tags] in Object.entries(this.data.tags)">
-                                                    <v-card flat>
-                                                        <v-card-text>
-                                                            <v-row v-if="key == 'master'" class="py-0">
-                                                                <v-col class="py-0">
-                                                                    <v-switch v-model="tagBulkMode" :label="'タグ表示一括設定を' + ((tagBulkMode) ? '無効にする':'有効にする')" :color="defaults.color[0]"></v-switch>
-                                                                </v-col>
-                                                            </v-row>
-                                                            <v-expand-transition>
-                                                                <v-row class="py-0" v-show="(key != ('master') || tagBulkMode)">
-                                                                    <v-col class="py-0">
-                                                                        <v-btn text @click="selectAllTags(key)">
-                                                                            すべて選択
-                                                                        </v-btn>
-                                                                        <v-btn text @click="removeAllTags(key)">
-                                                                            すべて選択解除
-                                                                        </v-btn>
-                                                                    </v-col>
-                                                                </v-row>
-                                                            </v-expand-transition>
-                                                            <v-expand-transition>
-                                                                <v-row v-show="(key != ('master') || tagBulkMode)">
-                                                                    <v-col v-for="tag in tags">
-                                                                        <v-checkbox v-model="tagSelected[key]" :label="tag" :value="tag" @change="changeTagState(key)"></v-checkbox>
-                                                                    </v-col>
-                                                                </v-row>
-                                                            </v-expand-transition>
-                                                        </v-card-text>
-                                                    </v-card>
-                                                </v-tab-item>
-                                            </v-tabs>
-                                        </v-expansion-panel-content>
-                                    </v-expansion-panel>
-                                </v-expansion-panels>
+                        <v-row>
+                            <v-col cols="12">
+                                <span>表示設定</span>
                             </v-col>
-                            <v-col cols="12" class="accordionParent">
-                                <v-expansion-panels accordion>
-                                    <v-expansion-panel
-                                    elevation="1">
-                                        <v-expansion-panel-header class="size line-height">
-                                            キャラクター表示設定
-                                        </v-expansion-panel-header>
-                                        <v-expansion-panel-content>
-                                            <v-tabs
-                                            vertical
-                                            v-show="this.state.ready">
-                                                <v-tab
-                                                v-for="(value, name) in this.data.settings.category"
-                                                class="justify-start">
-                                                    <span>{{name}}</span>
-                                                </v-tab>
-                                                <v-tab-item
-                                                v-for="(value, name) in this.data.settings.category">
-                                                    <v-card flat>
-                                                        <v-card-text>
-                                                            <v-row class="py-0">
+                            <v-col cols="12">
+                                <p class="text-caption">UI表示設定</p>
+                                <v-switch @click="changeAccordionDisplayState();" v-model="displaySetting.showAccordion"
+                                    :label="showAccordionSwicherLabel" :disabled="!state.ready" color="primary"
+                                    hide-details inset></v-switch>
+                            </v-col>
+                            <v-col cols="12">
+                                <p class="text-caption">表示領域設定</p>
+                                <v-range-slider v-model="displaySetting.yearRange.value"
+                                    :min="displaySetting.yearRange.min" :max="displaySetting.yearRange.max"
+                                    :disabled="!state.ready" step="1" color="primary" strict
+                                    @end="displayYearRangeChanged">
+                                    <template v-slot:prepend>
+                                        <span class="text-caption">{{displaySetting.yearRange.value[0]}}</span>
+                                    </template>
+                                    <template v-slot:append>
+                                        <span class="text-caption">{{displaySetting.yearRange.value[1]}}</span>
+                                    </template>
+                                </v-range-slider>
+                            </v-col>
+                        </v-row>
+                    </v-form>
+                </v-snackbar>
+                <v-container fluid>
+                    <v-row class="px-3">
+                        <!-- Select Field -->
+                        <v-col cols="12" class="accordionParent">
+                            <v-expansion-panels accordion>
+                                <v-expansion-panel elevation="1">
+                                    <v-expansion-panel-header class="size line-height">
+                                        タグ表示設定
+                                    </v-expansion-panel-header>
+                                    <v-expansion-panel-content>
+                                        <v-tabs vertical v-show="this.state.ready">
+                                            <v-tab class="justify-start" :disabled="tagBulkMode">
+                                                キャラクタータグ
+                                            </v-tab>
+                                            <v-tab class="justify-start" :disabled="tagBulkMode">
+                                                イベントタグ
+                                            </v-tab>
+                                            <v-tab class="justify-start">
+                                                一括設定
+                                            </v-tab>
+                                            <v-tab-item v-for="[key, tags] in Object.entries(this.data.tags)">
+                                                <v-card flat>
+                                                    <v-card-text>
+                                                        <v-row v-if="key == 'master'" class="py-0">
+                                                            <v-col class="py-0">
+                                                                <v-switch v-model="tagBulkMode"
+                                                                    :label="'タグ表示一括設定を' + ((tagBulkMode) ? '無効にする':'有効にする')"
+                                                                    :color="defaults.color[0]"></v-switch>
+                                                            </v-col>
+                                                        </v-row>
+                                                        <v-expand-transition>
+                                                            <v-row class="py-0"
+                                                                v-show="(key != ('master') || tagBulkMode)">
                                                                 <v-col class="py-0">
-                                                                    <v-btn text @click="selectAllCharactersInCategory(name)">
+                                                                    <v-btn text @click="selectAllTags(key)">
                                                                         すべて選択
                                                                     </v-btn>
-                                                                    <v-btn text @click="removeAllCharactersInCategory(name)">
+                                                                    <v-btn text @click="removeAllTags(key)">
                                                                         すべて選択解除
                                                                     </v-btn>
                                                                 </v-col>
                                                             </v-row>
-                                                            <v-row>
-                                                                <v-col
-                                                                v-for="character in value.characters">
-                                                                    <v-checkbox
-                                                                    v-model="characterSelected"
-                                                                    :label="character"
-                                                                    :value="character"
-                                                                    ></v-checkbox>
+                                                        </v-expand-transition>
+                                                        <v-expand-transition>
+                                                            <v-row v-show="(key != ('master') || tagBulkMode)">
+                                                                <v-col v-for="tag in tags">
+                                                                    <v-checkbox v-model="tagSelected[key]" :label="tag"
+                                                                        :value="tag"
+                                                                        @change="changeTagState(key)"></v-checkbox>
                                                                 </v-col>
                                                             </v-row>
-                                                        </v-card-text>
-                                                    </v-card>
-                                                </v-tab-item>
-                                            </v-tabs>
-                                        </v-expansion-panel-content>
-                                    </v-expansion-panel>
-                                </v-expansion-panels>
-                            </v-col>
-                            <!-- Contents Field -->
-                            <v-col cols="12">
-                                <v-card
-                                elevation="1"
-                                :loading="this.state.loading"
+                                                        </v-expand-transition>
+                                                    </v-card-text>
+                                                </v-card>
+                                            </v-tab-item>
+                                        </v-tabs>
+                                    </v-expansion-panel-content>
+                                </v-expansion-panel>
+                            </v-expansion-panels>
+                        </v-col>
+                        <v-col cols="12" class="accordionParent">
+                            <v-expansion-panels accordion>
+                                <v-expansion-panel elevation="1">
+                                    <v-expansion-panel-header class="size line-height">
+                                        キャラクター表示設定
+                                    </v-expansion-panel-header>
+                                    <v-expansion-panel-content>
+                                        <v-tabs vertical v-show="this.state.ready">
+                                            <v-tab v-for="(value, name) in this.data.settings.category"
+                                                class="justify-start">
+                                                <span>{{name}}</span>
+                                            </v-tab>
+                                            <v-tab-item v-for="(value, name) in this.data.settings.category">
+                                                <v-card flat>
+                                                    <v-card-text>
+                                                        <v-row class="py-0">
+                                                            <v-col class="py-0">
+                                                                <v-btn text
+                                                                    @click="selectAllCharactersInCategory(name)">
+                                                                    すべて選択
+                                                                </v-btn>
+                                                                <v-btn text
+                                                                    @click="removeAllCharactersInCategory(name)">
+                                                                    すべて選択解除
+                                                                </v-btn>
+                                                            </v-col>
+                                                        </v-row>
+                                                        <v-row>
+                                                            <v-col v-for="character in value.characters">
+                                                                <v-checkbox v-model="characterSelected"
+                                                                    :label="character" :value="character"></v-checkbox>
+                                                            </v-col>
+                                                        </v-row>
+                                                    </v-card-text>
+                                                </v-card>
+                                            </v-tab-item>
+                                        </v-tabs>
+                                    </v-expansion-panel-content>
+                                </v-expansion-panel>
+                            </v-expansion-panels>
+                        </v-col>
+                        <!-- Contents Field -->
+                        <v-col cols="12">
+                            <v-card elevation="1" :loading="this.state.loading"
                                 :class="(this.state.ready) ? 'pb-4' : ''">
-                                    <v-card-title class="px-6 size">
-                                        年表{{this.characterNames}}
-                                    </v-card-title>
-                                    <v-card-text class="px-6" id="timelineParent">
-                                        <v-expand-transition>
-                                            <!-- Timeline Table -->
-                                            <v-data-table
-                                            ref="timeline"
-                                            :headers="timelineHeaders"
-                                            :items="timelineData"
-                                            disable-sort="true"
-                                            class="elevation-0 overflow-y-auto"
-                                            v-show="this.state.ready"
-                                            calculate-widths="true"
-                                            hide-default-footer
-                                            hide-default-header
-                                            :height="this.tableHeight"
-                                            fixed-header
+                                <v-card-title class="px-6 size">
+                                    年表{{this.characterNames}}
+                                </v-card-title>
+                                <v-card-text class="px-6" id="timelineParent">
+                                    <v-expand-transition>
+                                        <!-- Timeline Table -->
+                                        <v-data-table ref="timeline" :headers="timelineHeaders" :items="timelineData"
+                                            disable-sort="true" class="elevation-0 overflow-y-auto"
+                                            v-show="this.state.ready" calculate-widths="true" hide-default-footer
+                                            hide-default-header :height="this.tableHeight" fixed-header
                                             :items-per-page="-1">
-                                                <!-- Header（1行目） -->
-                                                <template v-slot:header>
-                                                    <thead>
-                                                        <tr>
-                                                            <th colspan="1" class="border-none"><!-- 年数列 --></th>
-                                                            <template v-for="(category, name) in data.settings.category">
-                                                                <th
-                                                                v-show="intersection(category.characters, characterSelected).length > 0"
+                                            <!-- Header（1行目） -->
+                                            <template v-slot:header>
+                                                <thead>
+                                                    <tr>
+                                                        <th colspan="1" class="border-none"><!-- 年数列 --></th>
+                                                        <template v-for="(category, name) in data.settings.category">
+                                                            <th v-show="intersection(category.characters, characterSelected).length > 0"
                                                                 :colspan="intersection(category.characters, characterSelected).length * 2"
                                                                 :style="'background-color: ' + category.color + '; border: thin solid white;'"
-                                                                class="white--text"
-                                                                >
-                                                                    {{ name }}
-                                                                </th>
-                                                            </template>
-                                                        </tr>
-                                                        <tr>
-                                                            <template v-for="th in timelineHeaders">
-                                                                <th
-                                                                :style="'width: ' + th.width + ';'"
+                                                                class="white--text">
+                                                                {{ name }}
+                                                            </th>
+                                                        </template>
+                                                    </tr>
+                                                    <tr>
+                                                        <template v-for="th in timelineHeaders">
+                                                            <th :style="'width: ' + th.width + ';'"
                                                                 :class="th.class.join(' ')"
                                                                 @click="characterClicked(th.text)">
-                                                                    <span v-if="th.text == ''"></span>
-                                                                    <span v-else>
-                                                                        {{th.text}}<br>
-                                                                        <div class="d-flex flex-wrap">
-                                                                            <div
-                                                                            v-for="tag in th.tags"
+                                                                <span v-if="th.text == ''"></span>
+                                                                <span v-else>
+                                                                    {{th.text}}<br>
+                                                                    <div class="d-flex flex-wrap">
+                                                                        <div v-for="tag in th.tags"
                                                                             class="mr-1 grey--text text--lighten-1">
-                                                                                #{{tag}}
-                                                                            </div>
+                                                                            #{{tag}}
                                                                         </div>
-                                                                    </span>
-                                                                </th>
-                                                            </template>
-                                                        </tr>
-                                                    </thead>
-                                                </template>
-                                                <template v-slot:body="{items}">
-                                                    <tr v-for="item in items" class="timeline-tr" v-show="item.show">
-                                                        <template v-for="column in timelineHeaders">
-                                                            <!-- 年表示列 -->
-                                                            <td
-                                                            v-if="column.value == 'year'"
-                                                            :class="returnTdClass(item, column)">
-                                                                <span v-show="item.isFirstEvent">
-                                                                    <div class="d-flex flex-column align-content-center justify-center align-center">
-                                                                        <div class="text-center font" style="font-size: 1.1em;">{{item.year}}</div>
-                                                                        <v-btn
-                                                                        class="ma-0"
-                                                                        text
-                                                                        icon
-                                                                        color="primary"
-                                                                        @click="toggleYearSummaryShow(item.year); update(currentEventTagMode);"
-                                                                        v-if="item.year in yearSummary">
-                                                                            <v-icon v-if="yearSummary[item.year].summarize" class="size">
-                                                                                mdi-plus
-                                                                            </v-icon>
-                                                                            <v-icon v-else class="size">
-                                                                                mdi-minus
-                                                                            </v-icon>
-                                                                        </v-btn>
                                                                     </div>
                                                                 </span>
-                                                            </td>
-                                                            <!-- タイムライン列 -->
-                                                            <td
-                                                            v-else-if="colsTL.indexOf(column.value) != -1"
+                                                            </th>
+                                                        </template>
+                                                    </tr>
+                                                </thead>
+                                            </template>
+                                            <template v-slot:body="{items}">
+                                                <tr v-for="item in items" class="timeline-tr" v-show="item.show">
+                                                    <template v-for="column in timelineHeaders">
+                                                        <!-- 年表示列 -->
+                                                        <td v-if="column.value == 'year'"
+                                                            :class="returnTdClass(item, column)">
+                                                            <span v-show="item.isFirstEvent">
+                                                                <div
+                                                                    class="d-flex flex-column align-content-center justify-center align-center">
+                                                                    <div class="text-center font"
+                                                                        style="font-size: 1.1em;">{{item.year}}</div>
+                                                                    <v-btn class="ma-0" text icon color="primary"
+                                                                        @click="toggleYearSummaryShow(item.year); update(currentEventTagMode);"
+                                                                        v-if="item.year in yearSummary">
+                                                                        <v-icon v-if="yearSummary[item.year].summarize"
+                                                                            class="size">
+                                                                            mdi-plus
+                                                                        </v-icon>
+                                                                        <v-icon v-else class="size">
+                                                                            mdi-minus
+                                                                        </v-icon>
+                                                                    </v-btn>
+                                                                </div>
+                                                            </span>
+                                                        </td>
+                                                        <!-- タイムライン列 -->
+                                                        <td v-else-if="colsTL.indexOf(column.value) != -1"
                                                             :class="returnTdClass(item, column)"
                                                             :style="returnTimelineColorStyle(item, column)">
-                                                                <v-tooltip right
+                                                            <v-tooltip right
                                                                 :color="(item[column.value].age >= 0 && item[column.value].summary == false) ? '' : 'rgba(0,0,0,0)'">
-                                                                    <template v-slot:activator="{ on, attrs }">
-                                                                        <v-sheet
-                                                                        width="100%"
-                                                                        :height="item.height"
-                                                                        v-bind="attrs"
-                                                                        v-on="on"
-                                                                        color="rgba(0,0,0,0)"
-                                                                        >
-                                                                            <svg v-if="isFirstYearAfterDied(item, item[column.value])" class="arrow-svg svgFill" :data-color="
-                                                                            item[column.value].color" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.27 28.73"><defs><style>.cls-1{fill:#f7f9f7;}.cls-2{fill:none;stroke:#fff;stroke-linecap:round;stroke-miterlimit:10;stroke-width:4px;}</style></defs><g id="レイヤー_2" data-name="レイヤー 2"><g id="レイヤー_1-2" data-name="レイヤー 1"><polygon class="cls-1" points="26.49 26.73 1.72 0 51.27 0 26.49 26.73"/><line class="cls-2" x1="26.63" y1="26.73" x2="51.27" y2="2.09"/><line class="cls-2" x1="2" y1="2.09" x2="26.63" y2="26.73"/></g></g></svg>
-                                                                            <img v-else-if="displayNofillArrow(item, item[column.value])" v-show="item[column.value].needsArrow" src="./svg/nofill.svg" alt="" class="arrow-svg">
-                                                                            <img v-else v-show="item[column.value].needsArrow" src="./svg/fill.svg" alt="" class="arrow-svg">
-                                                                        </v-sheet>
-                                                                    </template>
-                                                                    <span>
-                                                                        <v-row v-show="item[column.value].age >= 0 && item[column.value].summary == false">
-                                                                            <v-col cols="3" class="d-flex align-center">
-                                                                                <v-icon
-                                                                                dark
-                                                                                left>
-                                                                                    mdi-information
-                                                                                </v-icon>
-                                                                            </v-col>
-                                                                            <v-col cols="9">
-                                                                                {{item[column.value].name}}
-                                                                                <template>
-                                                                                    <br>年齢:&nbsp;{{item[column.value].age}}<br>
-                                                                                </template>
-                                                                                <template v-if="'name' in item[column.value].school">
-                                                                                    {{item[column.value].school.name}}:&nbsp;{{item[column.value].school.grade}}年
-                                                                                </template>
-                                                                                <template v-for="pEv in item[column.value].periodEvents">
-                                                                                    <br>{{pEv.title}}:&nbsp;{{getPeriodEventDiff(pEv, item.date)}}
-                                                                                </template>
-                                                                            </v-col>
-                                                                        </v-row>
-                                                                    </span>
-                                                                </v-tooltip>
-                                                            </td>
-                                                            <!-- イベントカード列 -->
-                                                            <td
-                                                            v-else-if="colsEV.indexOf(column.value) != -1"
+                                                                <template v-slot:activator="{ on, attrs }">
+                                                                    <v-sheet width="100%" :height="item.height"
+                                                                        v-bind="attrs" v-on="on" color="rgba(0,0,0,0)">
+                                                                        <svg v-if="isFirstYearAfterDied(item, item[column.value])"
+                                                                            class="arrow-svg svgFill" :data-color="
+                                                                            item[column.value].color"
+                                                                            xmlns="http://www.w3.org/2000/svg"
+                                                                            viewBox="0 0 53.27 28.73">
+                                                                            <defs>
+                                                                                <style>
+                                                                                    .cls-1 {
+                                                                                        fill: #f7f9f7;
+                                                                                    }
+
+                                                                                    .cls-2 {
+                                                                                        fill: none;
+                                                                                        stroke: #fff;
+                                                                                        stroke-linecap: round;
+                                                                                        stroke-miterlimit: 10;
+                                                                                        stroke-width: 4px;
+                                                                                    }
+                                                                                </style>
+                                                                            </defs>
+                                                                            <g id="レイヤー_2" data-name="レイヤー 2">
+                                                                                <g id="レイヤー_1-2" data-name="レイヤー 1">
+                                                                                    <polygon class="cls-1"
+                                                                                        points="26.49 26.73 1.72 0 51.27 0 26.49 26.73" />
+                                                                                    <line class="cls-2" x1="26.63"
+                                                                                        y1="26.73" x2="51.27"
+                                                                                        y2="2.09" />
+                                                                                    <line class="cls-2" x1="2" y1="2.09"
+                                                                                        x2="26.63" y2="26.73" />
+                                                                                </g>
+                                                                            </g>
+                                                                        </svg>
+                                                                        <img v-else-if="displayNofillArrow(item, item[column.value])"
+                                                                            v-show="item[column.value].needsArrow"
+                                                                            src="./svg/nofill.svg" alt=""
+                                                                            class="arrow-svg">
+                                                                        <img v-else
+                                                                            v-show="item[column.value].needsArrow"
+                                                                            src="./svg/fill.svg" alt=""
+                                                                            class="arrow-svg">
+                                                                    </v-sheet>
+                                                                </template>
+                                                                <span>
+                                                                    <v-row
+                                                                        v-show="item[column.value].age >= 0 && item[column.value].summary == false">
+                                                                        <v-col cols="3" class="d-flex align-center">
+                                                                            <v-icon dark left>
+                                                                                mdi-information
+                                                                            </v-icon>
+                                                                        </v-col>
+                                                                        <v-col cols="9">
+                                                                            {{item[column.value].name}}
+                                                                            <template>
+                                                                                <br>年齢:&nbsp;{{item[column.value].age}}<br>
+                                                                            </template>
+                                                                            <template
+                                                                                v-if="'name' in item[column.value].school">
+                                                                                {{item[column.value].school.name}}:&nbsp;{{item[column.value].school.grade}}年
+                                                                            </template>
+                                                                            <template
+                                                                                v-for="pEv in item[column.value].periodEvents">
+                                                                                <br>{{pEv.title}}:&nbsp;{{getPeriodEventDiff(pEv,
+                                                                                item.date)}}
+                                                                            </template>
+                                                                        </v-col>
+                                                                    </v-row>
+                                                                </span>
+                                                            </v-tooltip>
+                                                        </td>
+                                                        <!-- イベントカード列 -->
+                                                        <td v-else-if="colsEV.indexOf(column.value) != -1"
                                                             :class="returnTdClass(item, column)">
-                                                                <v-row class="pa-0">
-                                                                    <v-col cols="12">
-                                                                        <v-card
-                                                                        v-for="(event, index) in item[column.value]"
+                                                            <v-row class="pa-0">
+                                                                <v-col cols="12">
+                                                                    <v-card v-for="(event, index) in item[column.value]"
                                                                         v-show="isEventTagsMatch2Card(item.summary, event.tags)"
                                                                         :color="returnCardColor(event.category)"
                                                                         :class="returnCardClass(index, item[column.value], event)"
                                                                         outlined>
-                                                                            <v-tooltip bottom
+                                                                        <v-tooltip bottom
                                                                             :color="(event.detail === '') ? 'rgba(0, 0, 0, 0)' : ''">
-                                                                                <template v-slot:activator="{ on, attrs }">
-                                                                                    <v-card-text
+                                                                            <template v-slot:activator="{ on, attrs }">
+                                                                                <v-card-text
                                                                                     v-bind:class="returnCardTextClass(event)"
-                                                                                    class="pa-2"
-                                                                                    v-bind="attrs"
+                                                                                    class="pa-2" v-bind="attrs"
                                                                                     v-on="on">
-                                                                                        <v-row>
-                                                                                            <v-col cols="4" v-if="item.displayLimit > 0 && event.category != 'summary'" class="font d-flex flex-column align-content-center align-center justify-center pr-0">
-                                                                                                <div
-                                                                                                style="font-size: 1.4rem;"
+                                                                                    <v-row>
+                                                                                        <v-col cols="4"
+                                                                                            v-if="item.displayLimit > 0 && event.category != 'summary'"
+                                                                                            class="font d-flex flex-column align-content-center align-center justify-center pr-0">
+                                                                                            <div style="font-size: 1.4rem;"
                                                                                                 class="font text-center">
-                                                                                                    {{item.date.getMonth() + 1}}
-                                                                                                </div>
-                                                                                                <div
-                                                                                                v-if="item.displayLimit > 1"
+                                                                                                {{item.date.getMonth() +
+                                                                                                1}}
+                                                                                            </div>
+                                                                                            <div v-if="item.displayLimit > 1"
                                                                                                 class="font text-center pt-1">
-                                                                                                    {{item.date.getDate()}}TH
-                                                                                                </div>
-                                                                                                <div
-                                                                                                v-if="item.displayLimit > 2"
+                                                                                                {{item.date.getDate()}}TH
+                                                                                            </div>
+                                                                                            <div v-if="item.displayLimit > 2"
                                                                                                 class="font text-center">
-                                                                                                    {{fillTimeByZero(item.date.getHours())}}:{{fillTimeByZero(item.date.getMinutes())}}
+                                                                                                {{fillTimeByZero(item.date.getHours())}}:{{fillTimeByZero(item.date.getMinutes())}}
+                                                                                            </div>
+                                                                                            <div v-if="item.beforeAfter != ''"
+                                                                                                class="text-center">
+                                                                                                {{item.beforeAfter}}
+                                                                                            </div>
+                                                                                        </v-col>
+                                                                                        <v-col cols=""
+                                                                                            class="pa-3 d-flex flex-column align-content-center align-center justify-center">
+                                                                                            <div class="text-center"
+                                                                                                v-text="event.title"
+                                                                                                style="white-space: pre-line;">
+                                                                                            </div>
+                                                                                            <div v-if="event.tags.length > 0 || event.birthday || event.important || event.isFlagEvent"
+                                                                                                class="d-flex flex-wrap flex-grow-1 align-center"
+                                                                                                style="width: 100%;">
+                                                                                                <div v-if="event.birthday"
+                                                                                                    class="d-flex align-center">
+                                                                                                    <v-icon size="small"
+                                                                                                        class="mr-1"
+                                                                                                        :color="returnCardIconColor(event)">
+                                                                                                        mdi-cake
+                                                                                                    </v-icon>
                                                                                                 </div>
-                                                                                                <div v-if="item.beforeAfter != ''" class="text-center">
-                                                                                                    {{item.beforeAfter}}
+                                                                                                <div v-if="event.important"
+                                                                                                    class="d-flex align-center">
+                                                                                                    <v-icon size="small"
+                                                                                                        class="mr-1"
+                                                                                                        :color="returnCardIconColor(event)">
+                                                                                                        mdi-star
+                                                                                                    </v-icon>
                                                                                                 </div>
-                                                                                            </v-col>
-                                                                                            <v-col cols="" class="pa-3 d-flex flex-column align-content-center align-center justify-center">
-                                                                                                <div class="text-center"
-                                                                                                v-text="event.title" style="white-space: pre-line;">
+                                                                                                <div v-if="event.isFlagOverEvent"
+                                                                                                    class="d-flex align-center">
+                                                                                                    <v-icon size="small"
+                                                                                                        class="mr-1"
+                                                                                                        :color="returnCardIconColor(event)">
+                                                                                                        mdi-flag-variant-remove-outline
+                                                                                                    </v-icon>
                                                                                                 </div>
-                                                                                                <div v-if="event.tags.length > 0 || event.birthday || event.important" class="d-flex flex-wrap flex-grow-1 align-center" style="width: 100%;">
-                                                                                                    <div v-if="event.birthday" class="d-flex align-center">
-                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event)">
-                                                                                                            mdi-cake
-                                                                                                        </v-icon>
-                                                                                                    </div>
-                                                                                                    <div v-if="event.important" class="d-flex align-center">
-                                                                                                        <v-icon size="small" class="mr-1" :color="returnCardIconColor(event)">
-                                                                                                            mdi-star
-                                                                                                        </v-icon>
-                                                                                                    </div>
-                                                                                                    <div v-for="tag in event.tags" class="mr-1 text-caption" :style="returnTagTextStyle(event.category)">
-                                                                                                        #{{tag}}
-                                                                                                    </div>
+                                                                                                <div v-if="event.isFlagEvent && !event.isFlagOverEvent"
+                                                                                                    class="d-flex align-center">
+                                                                                                    <v-icon size="small"
+                                                                                                        class="mr-1"
+                                                                                                        :color="returnCardIconColor(event)">
+                                                                                                        mdi-flag-variant
+                                                                                                    </v-icon>
                                                                                                 </div>
-                                                                                            </v-col>
-                                                                                        </v-row>
-                                                                                    </v-card-text>
-                                                                                </template>
-                                                                                <span v-if="event.detail != ''" v-text="event.detail" style="white-space: pre-line;"></span>
-                                                                            </v-tooltip>
-                                                                            <v-fade-transition>
-                                                                                <v-overlay v-if="state.highlightMode & !event.important" color="#FFFFFF" z-index="1" opacity="0.55" absolute>
-                                                                                </v-overlay>
-                                                                            </v-fade-transition>
-                                                                        </v-card>
-                                                                    </v-col>
-                                                                </v-row>
-                                                            </td>
-                                                        </template>
-                                                    </tr>
-                                                </template>
-                                            </v-data-table>
-                                        </v-expand-transition>
-                                    </v-card-text>
-                                </v-card>
-                            </v-col>
-                        </v-row>
-                    </v-container>
-                </v-main>
-                <v-snackbar
-                v-model="this.state.errorSnack"
-                timeout="-1">
-                    <span v-html="this.snackMessage"></span>
-                    <template v-slot:action="{attrs}">
-                        <v-btn
-                        color="primary"
-                        text
-                        v-bind="attrs"
-                        v-on:click="state.errorSnack = false;">
-                            Close
+                                                                                                <div v-for="tag in event.tags"
+                                                                                                    class="mr-1 text-caption"
+                                                                                                    :style="returnTagTextStyle(event.category)">
+                                                                                                    #{{tag}}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </v-col>
+                                                                                    </v-row>
+                                                                                </v-card-text>
+                                                                            </template>
+                                                                            <span v-if="event.detail != ''"
+                                                                                v-text="event.detail"
+                                                                                style="white-space: pre-line;"></span>
+                                                                        </v-tooltip>
+                                                                        <v-fade-transition>
+                                                                            <v-overlay
+                                                                                v-if="state.highlightMode & !event.important"
+                                                                                color="#FFFFFF" z-index="1"
+                                                                                opacity="0.55" absolute>
+                                                                            </v-overlay>
+                                                                        </v-fade-transition>
+                                                                    </v-card>
+                                                                </v-col>
+                                                            </v-row>
+                                                        </td>
+                                                    </template>
+                                                </tr>
+                                            </template>
+                                        </v-data-table>
+                                    </v-expand-transition>
+                                </v-card-text>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </v-container>
+            </v-main>
+            <v-snackbar v-model="this.state.errorSnack" timeout="-1">
+                <span v-html="this.snackMessage"></span>
+                <template v-slot:action="{attrs}">
+                    <v-btn color="primary" text v-bind="attrs" v-on:click="state.errorSnack = false;">
+                        Close
+                    </v-btn>
+                </template>
+            </v-snackbar>
+            <v-dialog v-model="state.showCharacterDB" :width="characterDatabase.width" scrollable>
+                <v-card>
+                    <v-toolbar density="compact" flat>
+                        <v-toolbar-title class="text-caption text-grey">
+                            Character Database
+                        </v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        <v-btn icon @click="state.showCharacterDB = false">
+                            <v-icon>mdi-window-close</v-icon>
                         </v-btn>
-                    </template>
-                </v-snackbar>
-                <v-dialog
-                v-model="state.showCharacterDB"
-                :width="characterDatabase.width"
-                scrollable>
-                    <v-card>
-                        <v-toolbar
-                        density="compact"
-                        flat>
-                            <v-toolbar-title class="text-caption text-grey">
-                                Character Database
-                            </v-toolbar-title>
-                            <v-spacer></v-spacer>
-                            <v-btn
-                            icon
-                            @click="state.showCharacterDB = false">
-                                <v-icon>mdi-window-close</v-icon>
-                            </v-btn>
-                        </v-toolbar>
-                        <v-tabs
-                        v-model="characterDatabase.mainTab"
-                        align-tabs="end"
-                        class="d-flex justify-end">
-                            <v-tab>FILE</v-tab>
-                            <v-tab :disabled="!characterDatabase.state.ready">CHARACTER</v-tab>
-                            <v-tab :disabled="!this.characterDatabase.state.ready" @click.native="initCharacterDatabaseChart">COMPARE</v-tab>
-                        </v-tabs>
-                        <v-card-text>
-                            <v-window v-model="characterDatabase.mainTab" @change="setCharacterDatabaseChartWH">
-                                <!-- file -->
-                                <v-window-item class="pt-5">
-                                    <v-row class="d-flex justify-center">
-                                        <v-col cols="5" class="d-flex align-center justify-center">
-                                            <v-form>
-                                                <v-file-input
-                                                v-model="characterDatabase.fileSelected"
-                                                @change="readCharacterDatabaseFile"
-                                                accept=".xlsx"
-                                                label="Select File..."
-                                                hide-input
+                    </v-toolbar>
+                    <v-tabs v-model="characterDatabase.mainTab" align-tabs="end" class="d-flex justify-end">
+                        <v-tab>FILE</v-tab>
+                        <v-tab :disabled="!characterDatabase.state.ready">CHARACTER</v-tab>
+                        <v-tab :disabled="!this.characterDatabase.state.ready"
+                            @click.native="initCharacterDatabaseChart">COMPARE</v-tab>
+                    </v-tabs>
+                    <v-card-text>
+                        <v-window v-model="characterDatabase.mainTab" @change="setCharacterDatabaseChartWH">
+                            <!-- file -->
+                            <v-window-item class="pt-5">
+                                <v-row class="d-flex justify-center">
+                                    <v-col cols="5" class="d-flex align-center justify-center">
+                                        <v-form>
+                                            <v-file-input v-model="characterDatabase.fileSelected"
+                                                @change="readCharacterDatabaseFile" accept=".xlsx"
+                                                label="Select File..." hide-input
                                                 prepend-icon="mdi-folder-table-outline"
-                                                class="pt-0 mt-0"
-                                                ></v-file-input>
-                                            </v-form>
-                                            <v-expand-x-transition>
-                                                <v-chip
-                                                v-show="this.characterDatabase.state.ready"
+                                                class="pt-0 mt-0"></v-file-input>
+                                        </v-form>
+                                        <v-expand-x-transition>
+                                            <v-chip v-show="this.characterDatabase.state.ready"
                                                 v-if="this.characterDatabase.fileSelected != null"
                                                 :color="this.characterDatabase.state.fileError? 'error' : 'success'"
-                                                class="mr-1"
-                                                outlined>
-                                                    {{this.characterDatabase.fileSelected.name}}
-                                                </v-chip>
-                                            </v-expand-x-transition>
-                                        </v-col>
-                                    </v-row>
-                                </v-window-item>
-                                <!-- character -->
-                                <v-window-item disabled="!characterDatabase.state.ready">
-                                    <v-row>
-                                        <v-col cols="2" class="d-flex flex-column">
-                                            <v-tabs
-                                            vertical
-                                            v-model="characterDatabase.characterListSelected"
-                                            color="primary"
-                                            @change="initCharacterDatabaseChart"
-                                            >
-                                                <v-tab
-                                                v-for="(row, index) in characterDatabase.characterList"
-                                                :disabled="row.disabled"
-                                                >{{row.name}}</v-tab>
-                                            </v-tabs>
-                                        </v-col>
-                                        <v-col cols="10">
-                                            <v-row>
-                                                <v-col cols="6">
-                                                    <v-card-title>
-                                                        {{currentCharacter.name}}
-                                                    </v-card-title>
-                                                    <v-card-text class="text-caption" v-text="currentCharacter.caption" style="white-space: pre-line;"></v-card-text>
-                                                    <v-tabs
-                                                    v-model="characterDatabase.dataTab"
-                                                    >
-                                                        <v-tab>TABLE</v-tab>
-                                                        <v-tab>TIMELINE</v-tab>
-                                                        <v-tab @change="initCharacterDatabaseChart">CHART</v-tab>
-                                                    </v-tabs>
-                                                    <v-window v-model="characterDatabase.dataTab">
-                                                        <v-window-item>
-                                                            <v-data-table
-                                                            :headers="characterDatabase.characterHeader"
-                                                            :items="characterDatabaseItems"
-                                                            group-by="dtype"
+                                                class="mr-1" outlined>
+                                                {{this.characterDatabase.fileSelected.name}}
+                                            </v-chip>
+                                        </v-expand-x-transition>
+                                    </v-col>
+                                </v-row>
+                            </v-window-item>
+                            <!-- character -->
+                            <v-window-item disabled="!characterDatabase.state.ready">
+                                <v-row>
+                                    <v-col cols="2" class="d-flex flex-column">
+                                        <v-tabs vertical v-model="characterDatabase.characterListSelected"
+                                            color="primary" @change="initCharacterDatabaseChart">
+                                            <v-tab v-for="(row, index) in characterDatabase.characterList"
+                                                :disabled="row.disabled">{{row.name}}</v-tab>
+                                        </v-tabs>
+                                    </v-col>
+                                    <v-col cols="10">
+                                        <v-row>
+                                            <v-col cols="6">
+                                                <v-card-title>
+                                                    {{currentCharacter.name}}
+                                                </v-card-title>
+                                                <v-card-text class="text-caption" v-text="currentCharacter.caption"
+                                                    style="white-space: pre-line;"></v-card-text>
+                                                <v-tabs v-model="characterDatabase.dataTab">
+                                                    <v-tab>TABLE</v-tab>
+                                                    <v-tab>TIMELINE</v-tab>
+                                                    <v-tab @change="initCharacterDatabaseChart">CHART</v-tab>
+                                                </v-tabs>
+                                                <v-window v-model="characterDatabase.dataTab">
+                                                    <v-window-item>
+                                                        <v-data-table :headers="characterDatabase.characterHeader"
+                                                            :items="characterDatabaseItems" group-by="dtype"
                                                             show-group-by>
-                                                                <template v-slot:item.index="{item}">
-                                                                    <span @click="columnClicked(item.index)">{{item.index}}</span>
-                                                                </template>
-                                                                <template
-                                                                v-slot:item.value="{item}">
-                                                                    <span v-if="item.dtype == 'date'">
-                                                                        {{strftime(item.value, item.displayLimit)}}
-                                                                    </span>
-                                                                    <span v-else-if="item.dtype == 'color'">
-                                                                        <v-tooltip right class="pa-0">
-                                                                            <template v-slot:activator="{ on, attrs }">
-                                                                                <v-chip
-                                                                                :color="item.value"
-                                                                                v-on="on"
+                                                            <template v-slot:item.index="{item}">
+                                                                <span
+                                                                    @click="columnClicked(item.index)">{{item.index}}</span>
+                                                            </template>
+                                                            <template v-slot:item.value="{item}">
+                                                                <span v-if="item.dtype == 'date'">
+                                                                    {{strftime(item.value, item.displayLimit)}}
+                                                                </span>
+                                                                <span v-else-if="item.dtype == 'color'">
+                                                                    <v-tooltip right class="pa-0">
+                                                                        <template v-slot:activator="{ on, attrs }">
+                                                                            <v-chip :color="item.value" v-on="on"
                                                                                 @mouseover="setCharacterDatabaseCurrentColor(item.value)">
                                                                                 {{item.value}}
-                                                                                </v-chip>
-                                                                            </template>
-                                                                            <span>
-                                                                                <v-color-picker v-model="characterDatabase.currentColor"
+                                                                            </v-chip>
+                                                                        </template>
+                                                                        <span>
+                                                                            <v-color-picker
+                                                                                v-model="characterDatabase.currentColor"
                                                                                 dark></v-color-picker>
-                                                                            </span>
-                                                                        </v-tooltip>
-                                                                    </span>
-                                                                    <span v-else>
-                                                                        {{item.value}}
-                                                                    </span>
-                                                                </template>
-                                                            </v-data-table>
-                                                        </v-window-item>
-                                                        <v-window-item>
-                                                            <v-data-table
-                                                            :headers="characterDatabase.timelineHeader"
+                                                                        </span>
+                                                                    </v-tooltip>
+                                                                </span>
+                                                                <span v-else>
+                                                                    {{item.value}}
+                                                                </span>
+                                                            </template>
+                                                        </v-data-table>
+                                                    </v-window-item>
+                                                    <v-window-item>
+                                                        <v-data-table :headers="characterDatabase.timelineHeader"
                                                             :items="characterDatabaseTimelineItems">
-                                                                <template
-                                                                v-slot:item.date="{item}">
-                                                                    {{strftime(item.date, item.displayLimit)}}
-                                                                </template>
-                                                            </v-data-table>
-                                                        </v-window-item>
-                                                        <v-window-item
-                                                        class="mt-5"
-                                                        eager="true">
-                                                            <div id="cdbChartParent">
-                                                                <canvas
-                                                                id="cdbChart">
-                                                                </canvas>
-                                                            </div>
-                                                        </v-window-item>
-                                                    </v-window>
-                                                </v-col>
-                                                <v-col cols="6">
-                                                    <v-carousel
-                                                    hide-delimiter-background="true"
-                                                    height="auto"
-                                                    v-model="characterDatabase.imgSelected"
-                                                    class="mt-5 mb-2">
-                                                        <v-carousel-item
-                                                        v-for="(item, index) in characterDatabaseImages"
-                                                        :key="`cdbImages_${index}`"
-                                                        :src="item.src">
-                                                        </v-carousel-item>
-                                                    </v-carousel>
-                                                    <v-row dense="true">
-                                                        <v-col
-                                                        v-for="(item, index) of  characterDatabaseImages"
-                                                        :key="`cdbImagesIcon_${index}`"
-                                                        class="d-flex child-flex"
+                                                            <template v-slot:item.date="{item}">
+                                                                {{strftime(item.date, item.displayLimit)}}
+                                                            </template>
+                                                        </v-data-table>
+                                                    </v-window-item>
+                                                    <v-window-item class="mt-5" eager="true">
+                                                        <div id="cdbChartParent">
+                                                            <canvas id="cdbChart">
+                                                            </canvas>
+                                                        </div>
+                                                    </v-window-item>
+                                                </v-window>
+                                            </v-col>
+                                            <v-col cols="6">
+                                                <v-carousel hide-delimiter-background="true" height="auto"
+                                                    v-model="characterDatabase.imgSelected" class="mt-5 mb-2">
+                                                    <v-carousel-item v-for="(item, index) in characterDatabaseImages"
+                                                        :key="`cdbImages_${index}`" :src="item.src">
+                                                    </v-carousel-item>
+                                                </v-carousel>
+                                                <v-row dense="true">
+                                                    <v-col v-for="(item, index) of  characterDatabaseImages"
+                                                        :key="`cdbImagesIcon_${index}`" class="d-flex child-flex"
                                                         cols="2">
-                                                            <v-img
-                                                            :src="item.src"
-                                                            aspect-ratio="1"
-                                                            class="grey lighten-2"
+                                                        <v-img :src="item.src" aspect-ratio="1" class="grey lighten-2"
                                                             @click.native="characterDatabase.imgSelected = index;"></v-img>
-                                                        </v-col>
-                                                    </v-row>
-                                                </v-col>
-                                            </v-row>
-                                        </v-col>
-                                    </v-row>
-                                </v-window-item>
-                                <!-- compare -->
-                                <v-window-item disabled="!characterDatabase.state.ready">
-                                    <v-row>
-                                        <v-col cols="2" class="d-flex flex-column">
-                                            <v-tabs
-                                            vertical
-                                            v-model="characterDatabase.columnListSelected"
-                                            color="primary"
-                                            >
-                                                <v-tab
-                                                v-for="(row, index) in characterDatabase.columnList"
-                                                :disabled="row.disabled"
-                                                >{{row.colName}}</v-tab>
-                                            </v-tabs>
-                                        </v-col>
-                                        <v-col cols="10">
-                                            <v-row>
-                                                <v-col cols="6">
-                                                    <div class="d-flex justify-space-between align-center">
-                                                        <v-card-title>
-                                                            {{currentColumnName}}
-                                                        </v-card-title>
-                                                        <v-btn
-                                                        @click="changeCompareTabValue"
-                                                        class="ma-2"
-                                                        outlined
-                                                        rounded>
-                                                            {{compareTabBtnMsg}}
-                                                            <v-icon right>
-                                                                mdi-chevron-right
-                                                            </v-icon>
-                                                        </v-btn>
-                                                    </div>
-                                                    <v-card-text class="text-caption">データ型: {{currentColumnDtype}}</v-card-text>
-                                                    <v-data-table
-                                                    :headers="characterDatabase.compareHeader"
+                                                    </v-col>
+                                                </v-row>
+                                            </v-col>
+                                        </v-row>
+                                    </v-col>
+                                </v-row>
+                            </v-window-item>
+                            <!-- compare -->
+                            <v-window-item disabled="!characterDatabase.state.ready">
+                                <v-row>
+                                    <v-col cols="2" class="d-flex flex-column">
+                                        <v-tabs vertical v-model="characterDatabase.columnListSelected" color="primary">
+                                            <v-tab v-for="(row, index) in characterDatabase.columnList"
+                                                :disabled="row.disabled">{{row.colName}}</v-tab>
+                                        </v-tabs>
+                                    </v-col>
+                                    <v-col cols="10">
+                                        <v-row>
+                                            <v-col cols="6">
+                                                <div class="d-flex justify-space-between align-center">
+                                                    <v-card-title>
+                                                        {{currentColumnName}}
+                                                    </v-card-title>
+                                                    <v-btn @click="changeCompareTabValue" class="ma-2" outlined rounded>
+                                                        {{compareTabBtnMsg}}
+                                                        <v-icon right>
+                                                            mdi-chevron-right
+                                                        </v-icon>
+                                                    </v-btn>
+                                                </div>
+                                                <v-card-text class="text-caption">データ型:
+                                                    {{currentColumnDtype}}</v-card-text>
+                                                <v-data-table :headers="characterDatabase.compareHeader"
                                                     :items="characterDatabaseCompareItems">
-                                                        <template v-slot:item.character="{item}">
-                                                            <span @click="characterClicked(item.character)">{{item.character}}</span>
-                                                        </template>
-                                                        <template
-                                                        v-slot:item.value="{item}">
-                                                            <span v-if="item.dtype == 'date'">
-                                                                {{strftime(item.value, item.displayLimit)}}
-                                                            </span>
-                                                            <span v-else-if="item.dtype == 'color'">
-                                                                <v-tooltip right class="pa-0">
-                                                                    <template v-slot:activator="{ on, attrs }">
-                                                                        <v-chip
-                                                                        :color="item.value"
-                                                                        v-on="on"
+                                                    <template v-slot:item.character="{item}">
+                                                        <span
+                                                            @click="characterClicked(item.character)">{{item.character}}</span>
+                                                    </template>
+                                                    <template v-slot:item.value="{item}">
+                                                        <span v-if="item.dtype == 'date'">
+                                                            {{strftime(item.value, item.displayLimit)}}
+                                                        </span>
+                                                        <span v-else-if="item.dtype == 'color'">
+                                                            <v-tooltip right class="pa-0">
+                                                                <template v-slot:activator="{ on, attrs }">
+                                                                    <v-chip :color="item.value" v-on="on"
                                                                         @mouseover="setCharacterDatabaseCurrentColor(item.value)">
                                                                         {{item.value}}
-                                                                        </v-chip>
-                                                                    </template>
-                                                                    <span>
-                                                                        <v-color-picker v-model="characterDatabase.currentColor"
+                                                                    </v-chip>
+                                                                </template>
+                                                                <span>
+                                                                    <v-color-picker
+                                                                        v-model="characterDatabase.currentColor"
                                                                         dark></v-color-picker>
-                                                                    </span>
-                                                                </v-tooltip>
-                                                            </span>
-                                                            <span v-else>
-                                                                {{item.value}}
-                                                            </span>
-                                                        </template>
-                                                    </v-data-table>
-                                                </v-col>
-                                                <v-col cols="6" eager="true">
-                                                    <v-window v-model="characterDatabase.compareTab">
-                                                        <v-window-item>
-                                                            <v-row class="mt-5">
-                                                                <v-col cols="4" v-for="cTabIdx in 3">
-                                                                    <v-select
+                                                                </span>
+                                                            </v-tooltip>
+                                                        </span>
+                                                        <span v-else>
+                                                            {{item.value}}
+                                                        </span>
+                                                    </template>
+                                                </v-data-table>
+                                            </v-col>
+                                            <v-col cols="6" eager="true">
+                                                <v-window v-model="characterDatabase.compareTab">
+                                                    <v-window-item>
+                                                        <v-row class="mt-5">
+                                                            <v-col cols="4" v-for="cTabIdx in 3">
+                                                                <v-select
                                                                     v-model="characterDatabase.crossTabValue[cTabIdx - 1]"
                                                                     :items="crossTabItems[cTabIdx - 1]"
                                                                     :label="`項目${cTabIdx}`"
                                                                     @change="resetCrosstabDuplicatedValue(cTabIdx - 1)"
                                                                     dense="true"></v-select>
-                                                                </v-col>
-                                                            </v-row>
-                                                            <v-row>
-                                                                <v-col cols="12">
-                                                                    <v-data-table
-                                                                    :headers="crossTabHeader"
+                                                            </v-col>
+                                                        </v-row>
+                                                        <v-row>
+                                                            <v-col cols="12">
+                                                                <v-data-table :headers="crossTabHeader"
                                                                     :items="crossTabTableItem"
                                                                     :group-by="characterDatabase.crossTabValue[0]"
                                                                     :sort-by="characterDatabase.crossTabValue.slice(-2)"
-                                                                    multi-sort
-                                                                    show-group-by>
-                                                                    </v-data-table>
-                                                                </v-col>
-                                                            </v-row>
-                                                        </v-window-item>
-                                                        <v-window-item eager="true">
-                                                            <div
-                                                            class="mt-5"
-                                                            id="cdbCompareChartParent">
-                                                                <canvas id="cdbCompareChart"></canvas>
-                                                            </div>
-                                                        </v-window-item>
-                                                    </v-window>
-                                                </v-col>
-                                            </v-row>
-                                        </v-col>
-                                    </v-row>
-                                </v-window-item>
-                            </v-window>
-                        </v-card-text>
-                    </v-card>
-                </v-dialog>
-            </v-app>
-        </div>
-        <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-        <script type="text/javascript" src="./js/app.js"></script>
-    </body>
+                                                                    multi-sort show-group-by>
+                                                                </v-data-table>
+                                                            </v-col>
+                                                        </v-row>
+                                                    </v-window-item>
+                                                    <v-window-item eager="true">
+                                                        <div class="mt-5" id="cdbCompareChartParent">
+                                                            <canvas id="cdbCompareChart"></canvas>
+                                                        </div>
+                                                    </v-window-item>
+                                                </v-window>
+                                            </v-col>
+                                        </v-row>
+                                    </v-col>
+                                </v-row>
+                            </v-window-item>
+                        </v-window>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+        </v-app>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script type="text/javascript" src="./js/app.js"></script>
+</body>
+
 </html>
