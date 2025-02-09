@@ -76,6 +76,18 @@
             </v-app-bar>
             <!-- Contents -->
             <v-main id="main">
+                <v-snackbar id="flagOverSnackbarParent" v-model="this.state.showFlagOverInfo" timeout="-1">
+                    <v-row>
+                        <v-col cols="12">
+                            <span>未回収・期限超過フラグ一覧</span>
+                        </v-col>
+                        <v-col cols="12" class="v-flex-column pt-0">
+                            <div v-for="setting in this.flagData.unpaidFlagInfo">
+                                {{`${setting.title}(${setting.flagId}): ${setting.characters.join(", ")}`}}
+                            </div>
+                        </v-col>
+                    </v-row>
+                </v-snackbar>
                 <v-snackbar id="displaySettingSnackbarParent" v-model="this.state.showDisplaySetting" timeout="-1">
                     <v-form>
                         <v-row>

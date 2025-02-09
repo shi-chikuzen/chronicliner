@@ -46,9 +46,12 @@ var app = new Vue({
             "characterDatabase": {"dtype": "データ型", "index": "項目名", "value": "値"},
         },
         data: { "settings": { "category": {}, "character": {}, "school": {}, }, "event": {}, "periodEvent": { "events": {}, "markers": [] }, "characters": [], "tags": { "character": [], "event": [], "master": [] } },
+        flagData: {
+            flagPayOffed: {},
+            flagPeriod: {},
+            unpaidFlagInfo: [],
+        },
         tag2CharacterDict: {},
-        flagPayOffed: {},
-        flagPeriod: {},
         characterSelected: [],
         tagBulkMode: false,
         tagSelected: {"character": [], "event": [], "master": []},
@@ -288,7 +291,7 @@ var app = new Vue({
                 this.characterDatabase.width - 48
             ) / 12 * 5) - 24;
             this.setTableHeight();
-            this.replaceDisplaySettingSnackbar();
+            this.replaceMenuSnackbar();
             this.state.showDisplaySetting = false;
         });
     },
@@ -819,9 +822,9 @@ var app = new Vue({
                 // 対象キャラクタを取得
                 let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
                 // フラグID:{キャラクタ名: bool}の辞書を作成
-                this.flagPayOffed[flagId] = {};
-                this.flagPeriod[flagId] = {"startDate": startDate, "endDate": endDate};
-                for (character of characters) this.flagPayOffed[flagId][character] = false;
+                this.flagData.flagPayOffed[flagId] = {};
+                this.flagData.flagPeriod[flagId] = {"startDate": startDate, "endDate": endDate};
+                for (character of characters) this.flagData.flagPayOffed[flagId][character] = false;
             }
             // フラグ解消の登録
             for (const row of payOffData) {
@@ -836,12 +839,12 @@ var app = new Vue({
                 const flagId = row[flagColName];
                 // 対象キャラクタを取得
                 let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
-                const startDate = this.flagPeriod[flagId].startDate;
-                const endDate = this.flagPeriod[flagId].endDate;
+                const startDate = this.flagData.flagPeriod[flagId].startDate;
+                const endDate = this.flagData.flagPeriod[flagId].endDate;
                 // 期限内の場合フラグ解消を登録
                 if (startDate <= date && date <= endDate) {
                     for (character of characters) {
-                        this.flagPayOffed[flagId][character] = true;
+                        this.flagData.flagPayOffed[flagId][character] = true;
                     }
                 }
             }
@@ -903,14 +906,24 @@ var app = new Vue({
                 } else {
                     // フラグ型イベントの場合、解消イベントが登録されていればエンドマーカーを入れない
                     const flagId = row[colNames["flagId"]].replace("#", "");
+                    let unpaidCharacters = [];
                     for (const characterName of res.characters) {
-                        if (!this.flagPayOffed[flagId][characterName]) {
+                        if (!this.flagData.flagPayOffed[flagId][characterName]) {
                             let characterEndMarker = _.cloneDeep(endMarker);
                             characterEndMarker[eventColNames["category"]] = characterName;
                             characterEndMarker[eventColNames["title"]] = res.title + "未回収";
                             characterEndMarker["isFlagOver"] = true;
                             this.data.periodEvent.markers.push(characterEndMarker);
+                            unpaidCharacters.push(characterName);
                         }
+                    }
+                    // 未解消情報の登録
+                    if (unpaidCharacters) {
+                        this.flagData.unpaidFlagInfo.push({
+                            flagId: flagId,
+                            title: res.title,
+                            characters: unpaidCharacters,
+                        });
                     }
                 }
                 // イベントをキャラクターごとに作成
@@ -940,7 +953,7 @@ var app = new Vue({
                 const beforeAfterOriginal = (colNames["beforeAfter"] in row) ? String(row[colNames["beforeAfter"]]) : "";
                 const beforeAfter = (beforeAfterOriginal in bfKeyDict) ? beforeAfterOriginal : "";
                 const title = String(row[colNames["title"]]);
-                const detail = (colNames["detail"] in row) ? String(row[colNames["detail"]]) : "";
+                let detail = (colNames["detail"] in row) ? String(row[colNames["detail"]]) : "";
                 const tagStr = (colNames["tag"] in row) ? String(row[colNames["tag"]]) : "";
                 let tags = this.formatTag(tagStr);
                 const important = (colNames["important"] in row) ? row[colNames["important"]] : false;
@@ -949,6 +962,13 @@ var app = new Vue({
                 const isFlagOverEvent = ("isFlagOver" in row) ? row["isFlagOver"]  : false;
                 this.data.tags.event = this.data.tags.event.concat(tags);
                 const formattedCategoryAsTag = category.replace("#", "");
+                if (isFlagEvent) {
+                    if (detail === "") {
+                        detail += `フラグID: ${flagId}`;
+                    } else {
+                        detail = `フラグID: ${flagId}\n${detail}`;
+                    }
+                }
                 // 対象キャラクタデータを作成
                 let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
                 if (isTagEvent && tags.indexOf(formattedCategoryAsTag) == -1) tags.push(formattedCategoryAsTag);
@@ -1455,9 +1475,11 @@ var app = new Vue({
             this.state.highlightMode = !this.state.highlightMode;
         },
         changeShowDisplaySettingState() { // 表示設定画面の表示非表示をトグルする
+            this.state.showFlagOverInfo = false;
             this.state.showDisplaySetting = !this.state.showDisplaySetting;
         },
         changeShowFlagOverInfo() { // フラグ期間超過一覧の表示非表示をトグルする
+            this.state.showDisplaySetting = false;
             this.state.showFlagOverInfo = !this.state.showFlagOverInfo;
         },
         // Styling
@@ -1483,14 +1505,18 @@ var app = new Vue({
                 vm.timelineData[index].height = String(tr.clientHeight) + "px";
             });
         },
-        replaceDisplaySettingSnackbar() { // DisplaySettingのSnackbar表示位置を強制的に変更する
+        replaceMenuSnackbar() { // メニューのSnackbar表示位置を強制的に変更する
             const displaySettingSnackbarParent = document.querySelector("#displaySettingSnackbarParent");
-            const displaySettingSnackbar = displaySettingSnackbarParent.children[0];
+            const flagOverSnackbarParent = document.querySelector("#flagOverSnackbarParent");
+            const parents = [displaySettingSnackbarParent, flagOverSnackbarParent];
             const header_end = document.querySelector("header").getBoundingClientRect().bottom;
-            displaySettingSnackbarParent.style.justifyContent = "right";
-            displaySettingSnackbarParent.style.alignItems = "flex-start";
-            displaySettingSnackbar.style.marginTop = String(header_end + 12) + "px";
-            displaySettingSnackbar.style.marginRight = "20px"
+            for (parent of parents) {
+                let child = parent.children[0];
+                parent.style.justifyContent = "right";
+                parent.style.alignItems = "flex-start";
+                child.style.marginTop = String(header_end + 12) + "px";
+                child.style.marginRight = "20px";
+            }
         },
         changeAccordionDisplayState() { // 設定アコーディオンの表示状態を変更する
             const vm = this;
