@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ========================================
-Chronicliner v3.0.0
+Chronicliner v3.1.0
 ========================================
 
 .. image:: ./img/usage_timeline.png
@@ -15,6 +15,9 @@ Chroniclinerは、キャラの年齢やら学年やら時系列がわからな�
 .. warning::
     ver2.1.0より前のExcelファイルを使用する場合、 ``キャラクター`` 、 ``イベント`` 、 ``期間イベント`` シートに ``タグ`` 列を追加してください。
 
+.. warning::
+    ver3.1.0より前のExcelファイルを使用する場合、 ``イベント`` 、 ``期間イベント`` シートに ``フラグID`` 列を追加してください。
+
 Licence
 ================================================================
 MITライセンスです。
@@ -22,7 +25,7 @@ MITライセンスです。
 + 同人・商用等での利用及び改変、改変物の配布が可能です
 + 但し、このリソースを使用したことによる責任の一切を負いかねます
 
-Copyright (c) 2022-2024 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
+Copyright (c) 2022-2025 `@shi_chikuzen <https://twitter.com/shi_chikuzen>`_ Released under the `MIT license <https://opensource.org/licenses/mit-license.php>`_
 
 .. _contact:
 
@@ -57,6 +60,7 @@ Contact
    ./source/data/school
    ./source/data/event
    ./source/data/periodEvent
+   ./source/data/flagEvent
    ./source/info/aboutErrors
 
 .. toctree::

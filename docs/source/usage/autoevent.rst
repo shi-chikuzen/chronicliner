@@ -72,8 +72,44 @@
     ":ref:`detail`", ":doc:`../data/periodEvent` で設定された終了時詳細"
     ":ref:`tagEVPeriod`", ":doc:`../data/periodEvent` で設定されたタグ"
 
+.. _flagStartEvent:
 
-5. サマリー
+5. フラグ回収期間開始イベント
+===============================
+フラグ型期間イベントが存在する場合、自動で追加されます。イベントの設定値は以下の通りです。
+
+.. csv-table::
+    :header: "カラム名", "設定値"
+
+    ":ref:`categoryE`", ":doc:`../data/periodEvent` で設定されたカテゴリ"
+    ":ref:`title`", ":doc:`../data/periodEvent` で設定されたイベントタイトル"
+    ":ref:`date`", ":doc:`../data/periodEvent` で設定された開始日時"
+    ":ref:`limit`", ":doc:`../data/periodEvent` で設定された以下を無視"
+    ":ref:`beforeAfter`", "``フラグ``"
+    ":ref:`detail`", ":doc:`../data/periodEvent` で設定された開始時詳細"
+    ":ref:`tagEVPeriod`", ":doc:`../data/periodEvent` で設定されたタグ"
+
+.. _flagEndEvent:
+
+6. フラグ回収期間終了イベント
+===============================
+期間イベントが存在する場合、自動で追加されます。イベントの設定値は以下の通りです。
+
+ただし、該当のキャラクターが期間内にフラグを回収した場合は表示されません。
+
+.. csv-table::
+    :header: "カラム名", "設定値"
+
+    ":ref:`categoryE`", ":doc:`../data/periodEvent` で設定されたカテゴリ"
+    ":ref:`title`", ":doc:`../data/periodEvent` で設定されたイベントタイトル"
+    ":ref:`date`", ":doc:`../data/periodEvent` で設定された終了日時"
+    ":ref:`limit`", ":doc:`../data/periodEvent` で設定された以下を無視"
+    ":ref:`beforeAfter`", "``フラグ``"
+    ":ref:`detail`", ":doc:`../data/periodEvent` で設定された終了時詳細"
+    ":ref:`tagEVPeriod`", ":doc:`../data/periodEvent` で設定されたタグ"
+
+
+7. サマリー
 ===============================
 データ読み込み時に自動で追加され、年折りたたみ時に表示されます。
 また、表示年範囲を制限している場合、制限対象の年のイベント数を集計して表示します。
