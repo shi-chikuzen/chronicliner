@@ -14,6 +14,13 @@ const vuetify = new Vuetify({
     },
 });
 
+class ValidationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "ValidationError";
+    }
+}
+
 var app = new Vue({
     el: '#app',
     vuetify: new Vuetify(),
@@ -347,7 +354,6 @@ var app = new Vue({
             return result;
         },
         fillTimeByZero(val) { // 時刻をゼロ埋めする
-            console.info(val)
             return ("0" + String(val)).slice(-2);
         },
         isBetween(target, start, end) { // targetがstart以上end未満かを返す
@@ -799,6 +805,7 @@ var app = new Vue({
                 eventCategory = "character";
             } else {
                 this.state.message.push(`イベント「${title}」に指定されたカテゴリないしキャラクター「${category}」が存在しません`);
+                throw ValidationError;
             };
             return [eventCategory, characters, isTagEvent];
         },
@@ -820,7 +827,12 @@ var app = new Vue({
                 let endDate = this.formatDate(row[colNames["endDate"]]);
                 endDate = this.resetDateFromLimit(endDate, limit);
                 // 対象キャラクタを取得
-                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                let eventCategory, characters, isTagEvent;
+                try {
+                    ([eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row));
+                } catch (e) {
+                    continue;
+                }
                 // フラグID:{キャラクタ名: bool}の辞書を作成
                 this.flagData.flagPayOffed[flagId] = {};
                 this.flagData.flagPeriod[flagId] = {"startDate": startDate, "endDate": endDate};
@@ -838,7 +850,12 @@ var app = new Vue({
                 date = this.resetDateFromLimit(date, limit);
                 const flagId = row[flagColName];
                 // 対象キャラクタを取得
-                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                let eventCategory, characters, isTagEvent;
+                try {
+                    ([eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row));
+                } catch (e) {
+                    continue;
+                }
                 const startDate = this.flagData.flagPeriod[flagId].startDate;
                 const endDate = this.flagData.flagPeriod[flagId].endDate;
                 // 期限内の場合フラグ解消を登録
@@ -859,7 +876,12 @@ var app = new Vue({
                 const flagId = (isFlagEvent) ? row[colNames["flagId"]] : "";
                 const category = String(row[colNames["category"]]);
                 const formattedCategoryAsTag = category.replace("#", "");
-                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                let eventCategory, characters, isTagEvent;
+                try {
+                    ([eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row));
+                } catch (e) {
+                    continue;
+                }
                 res.isFlagEvent = true;
                 res.characters = characters;
                 res.category = category;
@@ -970,7 +992,12 @@ var app = new Vue({
                     }
                 }
                 // 対象キャラクタデータを作成
-                let [eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row);
+                let eventCategory, characters, isTagEvent;
+                try {
+                    ([eventCategory, characters, isTagEvent] = this.getCharcterListOfEvent(row));
+                } catch (e) {
+                    continue;
+                }
                 if (isTagEvent && tags.indexOf(formattedCategoryAsTag) == -1) tags.push(formattedCategoryAsTag);
                 // イベントを設定
                 const key = moment(date).format() + String(settings[limit]) + String(bfKeyDict[beforeAfter]);
